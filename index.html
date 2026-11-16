@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F3EF">
+<title>Weather Style Lab — 날씨 맞춤 코디</title>
+<style>
+:root{
+  --bg:#F5F3EF; --card:#FFFFFF; --ink:#17181C; --sub:#6B6E76; --line:#E6E2DA; --soft:#F0EDE7;
+  --acc:#B5583B; --acc-soft:#F6E6DE; --good:#2E8B57; --warn:#B7791F; --bad:#C0392B;
+  --r:20px; --shadow:0 1px 2px rgba(20,20,20,.04),0 8px 24px rgba(20,20,20,.06);
+}
+[data-theme="dark"]{
+  --bg:#111215; --card:#1A1C21; --ink:#F1F1F3; --sub:#9A9DA6; --line:#2A2D34; --soft:#22252B;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:system-ui,-apple-system,'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+a{color:inherit}
+input,select{font:inherit;color:var(--ink)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 40px}
+header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:8px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:900;letter-spacing:-.02em;font-size:16px;min-width:0}
+.logo i{width:30px;height:30px;border-radius:10px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-style:normal;font-size:16px;flex:none}
+.logo small{display:block;font-size:10px;font-weight:500;color:var(--sub)}
+@media(max-width:420px){.logo small{display:none}}
+.sp{flex:1}
+select,.ibtn{height:36px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:0 8px;font-size:13px;font-weight:700}
+.ibtn{min-width:36px;padding:0 8px;display:grid;place-items:center;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.grid-top{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:820px){.grid-top{grid-template-columns:1fr}}
+.wx{padding:20px}
+.wx-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wx-city{font-size:13px;color:var(--sub);font-weight:700}
+.wx-main{display:flex;align-items:center;gap:14px;margin-top:6px}
+.wx-icon{font-size:52px;line-height:1}
+.wx-temp{font-size:56px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.wx-meta{font-size:13px;color:var(--sub)}
+.wx-meta b{color:var(--ink)}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stat div{background:var(--soft);border-radius:14px;padding:9px 4px;text-align:center}
+.stat span{display:block;font-size:11px;color:var(--sub)}
+.stat b{font-size:14px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.slots div{border:1px dashed var(--line);border-radius:14px;padding:8px;text-align:center;font-size:12px;color:var(--sub)}
+.slots b{display:block;font-size:16px;color:var(--ink)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--soft);color:var(--sub);white-space:nowrap}
+.badge.acc{background:var(--acc-soft);color:var(--acc)}
+.badge.g2{background:#E3F4EA;color:#1F7A45}.badge.g1{background:#EAF1FB;color:#2B5CA8}.badge.g0{background:#FBF1DD;color:#97600F}
+[data-theme="dark"] .badge.g2{background:#183325;color:#7FD3A2}[data-theme="dark"] .badge.g1{background:#1A2638;color:#8FB4EE}[data-theme="dark"] .badge.g0{background:#33280F;color:#E8B860}
+.tipbar{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--acc-soft);font-size:13px;display:flex;gap:8px}
+.banner{margin-top:12px;padding:10px 12px;border-radius:14px;background:#FBF1DD;color:#7A4E0C;font-size:12px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+[data-theme="dark"] .banner{background:#33280F;color:#E8B860}
+.ovr{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:none}
+.ovr.open{display:block}
+.row{display:flex;align-items:center;gap:10px;font-size:13px;margin:8px 0}
+.row label{width:64px;color:var(--sub);font-weight:700;flex:none}
+.row input[type=range]{flex:1;accent-color:var(--acc);min-width:0}
+.row output{width:56px;text-align:right;font-weight:700}
+.num{width:76px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 8px;text-align:right;font-weight:700}
+.link{font-size:12px;font-weight:700;color:var(--acc);text-decoration:underline;text-underline-offset:3px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--sub)}
+.state{padding:28px 8px;text-align:center}
+.state .big{font-size:42px}
+.state h3{font-size:17px;margin:6px 0 2px}
+.state p{font-size:13px;color:var(--sub);margin-bottom:14px}
+.skel{background:linear-gradient(90deg,var(--soft) 25%,var(--line) 50%,var(--soft) 75%);background-size:200% 100%;animation:sk 1.2s infinite;border-radius:12px}
+@keyframes sk{to{background-position:-200% 0}}
+.pf{padding:20px;display:flex;flex-direction:column;gap:12px}
+.pf-top{display:flex;align-items:center;gap:12px}
+.pf-ic{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;font-size:24px;background:var(--acc-soft);flex:none}
+.pf h3{font-size:16px}
+.pf p{font-size:12px;color:var(--sub)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.sw{width:24px;height:24px;border-radius:50%;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line)}
+.btn{height:42px;padding:0 16px;border-radius:14px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--ink);color:var(--bg)}
+.btn.acc{background:var(--acc);color:#fff}
+.btn.ghost{border:1px solid var(--line);background:var(--card)}
+.btn.sm{height:36px;font-size:12px;padding:0 12px;border-radius:11px}
+.tabs{display:flex;gap:2px;margin:22px 0 14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 12px;font-size:14px;font-weight:700;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+.tab.on{color:var(--ink);border-color:var(--ink)}
+.view{display:none}.view.on{display:block}
+.filters{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.fl{display:flex;align-items:center;gap:8px}
+.fl>span{font-size:11px;font-weight:700;color:var(--sub);width:40px;flex:none}
+.seg{display:inline-flex;background:var(--soft);border-radius:12px;padding:3px;gap:2px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.seg::-webkit-scrollbar{display:none}
+.seg button{padding:6px 11px;border-radius:9px;font-size:12px;font-weight:700;color:var(--sub);white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.notice{padding:12px 14px;border-radius:16px;background:var(--acc-soft);font-size:13px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:900px){.cards{grid-template-columns:1fr}}
+.oc{overflow:hidden;display:flex;flex-direction:column}
+.oc-fig{position:relative;height:290px;display:grid;place-items:center}
+.oc-fig svg{height:100%;width:auto}
+.oc-fig .rank{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.88);color:#333}
+.oc-fig .cap{position:absolute;bottom:10px;left:12px;font-size:10px;font-weight:700;color:#555;background:rgba(255,255,255,.75);padding:2px 8px;border-radius:99px}
+.oc-body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.oc h4{font-size:16px;letter-spacing:-.02em}
+.reason{font-size:13px;font-weight:700;background:var(--soft);border-left:3px solid var(--acc);padding:9px 11px;border-radius:4px 12px 12px 4px}
+.items{list-style:none;display:flex;flex-direction:column;gap:6px}
+.items li{display:flex;align-items:center;gap:8px;font-size:13px}
+.items .k{width:42px;color:var(--sub);font-size:11px;font-weight:700;flex:none}
+.dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.12);flex:none;display:inline-block}
+details.why{font-size:12px;color:var(--sub)}
+details.why summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:12px;list-style:none}
+details.why summary::-webkit-details-marker{display:none}
+details.why summary::after{content:' ▾'}
+details.why[open] summary::after{content:' ▴'}
+details.why ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:3px}
+.oc-act{display:flex;gap:6px;margin-top:auto;padding-top:4px}
+.oc-act .btn{flex:1}
+.week{display:flex;flex-direction:column;gap:8px}
+.wk{display:grid;grid-template-columns:62px 34px 88px 1fr;gap:10px;align-items:center;padding:12px 14px;text-align:left;width:100%}
+.wk.on{outline:2px solid var(--acc)}
+.wk .d{font-weight:900;font-size:14px}.wk .d small{display:block;color:var(--sub);font-weight:500;font-size:11px}
+.wk .i{font-size:26px}
+.wk .t{font-size:13px}.wk .t b{font-size:15px}
+.wk .o{font-size:12px;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+@media(max-width:560px){.wk{grid-template-columns:56px 30px 1fr}.wk .o{grid-column:1/-1}}
+.gd{display:flex;flex-direction:column;gap:8px}
+.gd>div{display:grid;grid-template-columns:100px 1fr;gap:12px;padding:12px 14px;font-size:13px;align-items:center}
+.gd>div.on{outline:2px solid var(--acc);background:var(--acc-soft)}
+.empty{text-align:center;padding:40px 16px;color:var(--sub);font-size:14px}
+.empty div{font-size:40px;margin-bottom:8px}
+.modal{position:fixed;inset:0;background:rgba(10,10,12,.55);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+@media(min-width:640px){.modal{align-items:center}.sheet{border-radius:24px}}
+.sheet h3{font-size:18px;margin-bottom:4px}
+.sheet .desc{font-size:13px;color:var(--sub);margin-bottom:16px}
+.fld{margin-bottom:16px}
+.fld>span{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:6px}
+.pcs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc{border:2px solid var(--line);border-radius:16px;padding:10px;text-align:left}
+.pc.on{border-color:var(--acc)}
+.pc b{font-size:13px;display:block;margin-bottom:6px}
+.pc .sw{width:18px;height:18px}
+.quiz{background:var(--soft);border-radius:16px;padding:12px;margin-top:8px;display:none;font-size:13px}
+.quiz.open{display:block}
+.quiz p{font-weight:700;margin:8px 0 6px}
+.shop-row{padding:12px 0;border-bottom:1px solid var(--line)}
+.shop-row b{font-size:14px;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.stores{display:flex;gap:6px;flex-wrap:wrap}
+.stores a{font-size:12px;font-weight:700;text-decoration:none;padding:7px 11px;border-radius:10px;border:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:14px;font-size:13px;font-weight:700;transition:.25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.credit{margin-top:28px;font-size:11px;color:var(--sub);text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo"><i>☂</i><div>Weather Style Lab<small>날씨 · 체형 · 퍼스널 컬러 맞춤 코디</small></div></div>
+    <div class="sp"></div>
+    <select id="city" aria-label="도시 선택"></select>
+    <button class="ibtn" id="locBtn" aria-label="현재 위치">📍</button>
+    <button class="ibtn" id="themeBtn" aria-label="다크 모드">🌙</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid-top">
+    <section class="card wx" id="wxCard"></section>
+    <section class="card pf" id="pfCard"></section>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab on" data-tab="today">오늘의 코디</button>
+    <button class="tab" data-tab="week">주간 플랜</button>
+    <button class="tab" data-tab="lookbook">룩북 (<span id="lbCount">0</span>)</button>
+    <button class="tab" data-tab="guide">기온별 옷차림</button>
+  </nav>
+
+  <div class="view on" id="v-today">
+    <div class="filters">
+      <div class="fl"><span>목적</span>
+        <div class="seg" id="tpoSeg"><button data-v="daily">일상·산책</button><button data-v="office">출근·등교</button><button data-v="interview">면접</button><button data-v="date">데이트</button><button data-v="active">운동·여행</button></div>
+      </div>
+      <div class="fl"><span>스타일</span>
+        <div class="seg" id="styleSeg"><button data-v="all">전체</button><button data-v="casual">캐주얼</button><button data-v="minimal">미니멀</button><button data-v="street">스트릿</button><button data-v="office">오피스</button></div>
+        <button class="btn ghost sm" id="refreshBtn" style="flex:none">↻ 다른 코디</button>
+      </div>
+    </div>
+    <div id="notices"></div>
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <div class="view" id="v-week">
+    <p style="font-size:13px;color:var(--sub);margin-bottom:10px">7일 예보에 맞춘 핵심 아이템이에요. 날짜를 누르면 그날 코디를 볼 수 있어요.</p>
+    <div class="week" id="week"></div>
+  </div>
+
+  <div class="view" id="v-lookbook">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px">
+      <p style="font-size:13px;color:var(--sub)">저장한 코디는 이 기기에 보관돼요.</p>
+      <button class="btn ghost sm" id="clearLb">전체 삭제</button>
+    </div>
+    <div class="cards" id="lbGrid"></div>
+  </div>
+
+  <div class="view" id="v-guide">
+    <p style="font-size:13px;color:var(--sub);margin-bottom:10px">체감온도 기준이에요. 지금 해당하는 구간이 강조돼요.</p>
+    <div class="gd" id="guide"></div>
+  </div>
+
+  <p class="credit">날씨 데이터: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)<br>코디 추천은 날씨·프로필 조건에 점수를 매기는 규칙 기반 참고용이에요.</p>
+</div>
+
+<div class="modal" id="pfModal">
+  <div class="sheet">
+    <h3>내 스타일 프로필</h3>
+    <p class="desc">입력한 정보가 추천 점수에 반영돼요. 이 기기에만 저장됩니다.</p>
+    <div class="fld"><span>성별</span>
+      <div class="seg" id="mGender"><button data-v="male">남성</button><button data-v="female">여성</button><button data-v="unisex">공용·젠더리스</button></div>
+    </div>
+    <div class="fld"><span>키 · 몸무게</span>
+      <div class="row"><label>키 (cm)</label><input type="range" id="mH" min="140" max="200"><input class="num" type="number" id="mHn" min="140" max="200" inputmode="numeric"></div>
+      <div class="row"><label>몸무게 (kg)</label><input type="range" id="mW" min="35" max="130"><input class="num" type="number" id="mWn" min="35" max="130" inputmode="numeric"></div>
+      <p style="font-size:11px;color:var(--sub)">기장·실루엣 참고용이에요. 정확한 사이즈는 평소 사이즈와 상품 실측을 확인해 주세요.</p>
+    </div>
+    <div class="fld"><span>선호 핏</span>
+      <div class="seg" id="mFit"><button data-v="over">오버핏</button><button data-v="regular">레귤러</button><button data-v="slim">슬림핏</button></div>
+    </div>
+    <div class="fld"><span>퍼스널 컬러 <button class="link" id="quizToggle" style="margin-left:6px">잘 모르겠어요 →</button></span>
+      <div class="pcs" id="mPc"></div>
+      <div class="quiz" id="quiz">
+        <p>1. 손목 안쪽 혈관 색은?</p>
+        <div class="seg" data-q="tone"><button data-v="warm">초록빛</button><button data-v="cool">파란·보라빛</button></div>
+        <p>2. 더 잘 어울리는 액세서리는?</p>
+        <div class="seg" data-q="metal"><button data-v="warm">골드</button><button data-v="cool">실버</button></div>
+        <p>3. 더 잘 받는 색 느낌은?</p>
+        <div class="seg" data-q="depth"><button data-v="light">밝고 화사한 색</button><button data-v="deep">깊고 차분한 색</button></div>
+        <p id="quizRes" style="color:var(--acc)"></p>
+      </div>
+    </div>
+    <button class="btn pri" style="width:100%" id="pfSave">저장하고 코디 받기</button>
+  </div>
+</div>
+
+<div class="modal" id="shopModal">
+  <div class="sheet">
+    <h3>쇼핑몰에서 검색</h3>
+    <p class="desc">색상 + 아이템 이름으로 각 쇼핑몰 검색 결과를 열어요. 사이즈는 평소 사이즈와 상품 실측을 꼭 확인하세요.</p>
+    <div id="shopList"></div>
+    <button class="btn ghost" style="width:100%;margin-top:16px" data-close>닫기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Weather Style Lab v3 — 날씨 파싱 + 추천 엔진 (DOM 없음) =====
+const WSL = (() => {
+  // ---------- 유틸 ----------
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function hashStr(s) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const r1 = v => Math.round(v * 10) / 10;
+  const bareName = n => n.replace(/\s*\(.+\)\s*$/, '');
+  function hasBatchim(word) {
+    const w = bareName(word).trim();
+    const c = w.charCodeAt(w.length - 1);
+    if (c >= 0xAC00 && c <= 0xD7A3) return (c - 0xAC00) % 28 !== 0;
+    return false;
+  }
+  const wa = w => w + (hasBatchim(w) ? '과' : '와');
+  const eul = w => w + (hasBatchim(w) ? '을' : '를');
+  const ko = n => bareName(n);
+
+  // ---------- 도시 ----------
+  const CITIES = {
+    Seoul: { ko: '서울', lat: 37.5665, lon: 126.9780 },
+    Incheon: { ko: '인천', lat: 37.4563, lon: 126.7052 },
+    Suwon: { ko: '수원', lat: 37.2636, lon: 127.0286 },
+    Chuncheon: { ko: '춘천', lat: 37.8813, lon: 127.7298 },
+    Gangneung: { ko: '강릉', lat: 37.7519, lon: 128.8761 },
+    Daejeon: { ko: '대전', lat: 36.3504, lon: 127.3845 },
+    Jeonju: { ko: '전주', lat: 35.8242, lon: 127.1480 },
+    Gwangju: { ko: '광주', lat: 35.1595, lon: 126.8526 },
+    Daegu: { ko: '대구', lat: 35.8714, lon: 128.6014 },
+    Ulsan: { ko: '울산', lat: 35.5384, lon: 129.3114 },
+    Busan: { ko: '부산', lat: 35.1796, lon: 129.0756 },
+    Jeju: { ko: '제주', lat: 33.4996, lon: 126.5312 },
+    Tokyo: { ko: '도쿄', lat: 35.6762, lon: 139.6503 },
+    Osaka: { ko: '오사카', lat: 34.6937, lon: 135.5023 },
+    Paris: { ko: '파리', lat: 48.8566, lon: 2.3522 },
+    NewYork: { ko: '뉴욕', lat: 40.7128, lon: -74.0060 }
+  };
+
+  // ---------- Open-Meteo ----------
+  function forecastUrl(lat, lon) {
+    return 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day' +
+      '&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,relative_humidity_2m' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum' +
+      '&wind_speed_unit=ms&timezone=auto&forecast_days=7';
+  }
+  function airUrl(lat, lon) {
+    return 'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + lat + '&longitude=' + lon + '&current=pm10,pm2_5&timezone=auto';
+  }
+  function wmo(code, night) {
+    if (code === 0) return { cond: '맑음', icon: night ? '🌙' : '☀️' };
+    if (code <= 2) return { cond: '구름 조금', icon: night ? '☁️' : '⛅' };
+    if (code === 3) return { cond: '흐림', icon: '☁️' };
+    if (code === 45 || code === 48) return { cond: '안개', icon: '🌫️' };
+    if (code >= 51 && code <= 57) return { cond: '이슬비', icon: '🌦️', wet: true };
+    if (code >= 61 && code <= 67) return { cond: '비', icon: '🌧️', wet: true };
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { cond: '눈', icon: '🌨️', wet: true, snow: true };
+    if (code >= 80 && code <= 82) return { cond: '소나기', icon: '🌦️', wet: true };
+    if (code >= 95) return { cond: '뇌우', icon: '⛈️', wet: true };
+    return { cond: '흐림', icon: '☁️' };
+  }
+  function airGradeOf(pm10, pm25) {
+    if (pm10 == null && pm25 == null) return null;
+    const g10 = pm10 == null ? 0 : pm10 <= 30 ? 0 : pm10 <= 80 ? 1 : pm10 <= 150 ? 2 : 3;
+    const g25 = pm25 == null ? 0 : pm25 <= 15 ? 0 : pm25 <= 35 ? 1 : pm25 <= 75 ? 2 : 3;
+    const g = Math.max(g10, g25);
+    return { grade: ['좋음', '보통', '나쁨', '매우 나쁨'][g], bad: g >= 2, pm10, pm25 };
+  }
+  function feelsCalc(t, wind) { // 직접 입력 모드용 간이 체감온도
+    if (t <= 10 && wind > 1.3) { const v = wind * 3.6; return 13.12 + 0.6215 * t - 11.37 * v ** 0.16 + 0.3965 * t * v ** 0.16; }
+    return t;
+  }
+
+  // 원본 응답 → 날짜별 날씨 객체 배열
+  function parseForecast(fc, aq, placeKo) {
+    if (!fc || !fc.daily || !fc.hourly || !fc.daily.time) throw new Error('bad-response');
+    const H = fc.hourly, D = fc.daily;
+    const air = aq && aq.current ? airGradeOf(aq.current.pm10, aq.current.pm2_5) : null;
+    const cur = fc.current || null;
+    return D.time.map((date, di) => {
+      const idx = [];
+      H.time.forEach((t, i) => { if (t.slice(0, 10) === date) idx.push(i); });
+      const at = (arr, h) => { const i = idx.find(k => +H.time[k].slice(11, 13) === h); return i == null || arr[i] == null ? null : arr[i]; };
+      const range = (arr, a, b) => idx.filter(k => { const h = +H.time[k].slice(11, 13); return h >= a && h <= b; }).map(k => arr[k]).filter(v => v != null);
+      const slot = (name, h) => ({ name, h, temp: at(H.temperature_2m, h), feels: at(H.apparent_temperature, h) });
+      const day = {
+        date, place: placeKo, isToday: di === 0,
+        code: D.weather_code[di], hi: D.temperature_2m_max[di], lo: D.temperature_2m_min[di],
+        rainProb: D.precipitation_probability_max ? (D.precipitation_probability_max[di] ?? 0) : 0,
+        precip: D.precipitation_sum ? (D.precipitation_sum[di] ?? 0) : 0,
+        slots: [slot('아침', 8), slot('낮', 14), slot('저녁', 20)],
+        wind: Math.max(0, ...range(H.wind_speed_10m, 8, 21)),
+        hum: Math.round(avg(range(H.relative_humidity_2m, 8, 21)) || 0),
+        hourlyRain: idx.map(k => ({ h: +H.time[k].slice(11, 13), p: H.precipitation_probability[k] ?? 0, mm: H.precipitation ? (H.precipitation[k] ?? 0) : 0, code: H.weather_code[k] }))
+      };
+      if (di === 0 && cur) {
+        day.now = { temp: cur.temperature_2m, feels: cur.apparent_temperature, code: cur.weather_code, night: cur.is_day === 0, hum: cur.relative_humidity_2m, wind: cur.wind_speed_10m, hour: +String(cur.time).slice(11, 13) };
+        day.air = air;
+      }
+      return day;
+    });
+  }
+  function avg(a) { return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; }
+
+  // 직접 입력값만으로 하루 날씨 만들기 (조회 실패 시 시연용)
+  function manualDay(placeKo, ov) {
+    const t = ov.temp, hi = t + 4, lo = t - 4;
+    const mk = (name, h, v) => ({ name, h, temp: v, feels: r1(feelsCalc(v, ov.wind)) });
+    const d = new Date();
+    return {
+      date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      place: placeKo, isToday: true, manualOnly: true,
+      code: ov.rain ? (t <= 1 ? 71 : 61) : 1, hi, lo, rainProb: ov.rain ? 80 : 10, precip: ov.rain ? 5 : 0,
+      slots: [mk('아침', 8, lo + 1), mk('낮', 14, hi), mk('저녁', 20, t)],
+      wind: ov.wind, hum: ov.rain ? 85 : 55, hourlyRain: [],
+      now: { temp: t, feels: r1(feelsCalc(t, ov.wind)), code: ov.rain ? 61 : 1, night: false, hum: ov.rain ? 85 : 55, wind: ov.wind }
+    };
+  }
+
+  // 날짜 원본 + 직접 조정 → 추천 엔진이 쓰는 날씨 객체
+  function finalizeDay(raw, ov) {
+    const d = JSON.parse(JSON.stringify(raw));
+    let note = null;
+    if (ov && ov.on && !raw.manualOnly) {
+      const shift = ov.temp - Math.round((d.hi + d.lo) / 2);
+      d.hi += shift; d.lo += shift;
+      d.slots.forEach(s => { if (s.temp != null) s.temp += shift; if (s.feels != null) s.feels = r1(feelsCalc(s.temp, ov.wind) + (s.feels - feelsCalc(s.temp - shift, d.wind)) * 0); });
+      if (d.now) { d.now.temp += shift; d.now.feels = r1(feelsCalc(d.now.temp, ov.wind)); d.now.wind = ov.wind; }
+      d.wind = ov.wind;
+      if (ov.rain) { d.rainProb = Math.max(d.rainProb, 80); d.precip = Math.max(d.precip, 5); if (!wmo(d.code).wet) d.code = d.hi <= 3 ? 71 : 61; d.hourlyRain = []; }
+      else { d.rainProb = Math.min(d.rainProb, 20); d.precip = 0; if (wmo(d.code).wet) d.code = 3; d.hourlyRain = []; }
+      note = '직접 조정';
+    }
+    const w = wmo(d.code, d.now ? d.now.night : false);
+    const rainHour = (d.hourlyRain || []).find(x => x.h >= 7 && x.h <= 22 && (x.p >= 50 || x.mm >= 0.5));
+    const rain = !!(w.wet || d.rainProb >= 50 || d.precip >= 1 || rainHour);
+    const snow = !!(w.snow || (rain && d.hi <= 2));
+    const fl = d.slots.map(s => s.feels).filter(v => v != null);
+    const target = fl.length === 3 ? Math.round((fl[0] + fl[1] * 2 + fl[2]) / 4) : Math.round((d.hi + d.lo) / 2);
+    const icon = rain ? (snow ? '🌨️' : w.wet ? w.icon : '🌧️') : w.icon;
+    const cond = rain && !w.wet ? (snow ? '눈 가능성' : '비 가능성') : w.cond;
+    return {
+      date: d.date, place: d.place, isToday: d.isToday, cond, icon,
+      hi: Math.round(d.hi), lo: Math.round(d.lo), range: Math.round(d.hi - d.lo),
+      temp: d.now ? Math.round(d.now.temp) : (d.slots[1].temp != null ? Math.round(d.slots[1].temp) : Math.round(d.hi)),
+      feels: d.now ? Math.round(d.now.feels) : (d.slots[1].feels != null ? Math.round(d.slots[1].feels) : target),
+      slots: d.slots.map(s => ({ name: s.name, temp: s.temp == null ? null : Math.round(s.temp), feels: s.feels == null ? null : Math.round(s.feels) })),
+      rainProb: Math.round(d.rainProb), precip: r1(d.precip), rain, snow,
+      rainFrom: rain && rainHour ? rainHour.h : null,
+      wind: r1(d.wind), hum: d.now ? Math.round(d.now.hum) : d.hum,
+      air: d.air || null, target, note, manualOnly: !!raw.manualOnly
+    };
+  }
+
+  // ---------- 기온별 옷차림 ----------
+  const BANDS = [
+    { min: 28, label: '28°C 이상', items: '민소매, 반팔, 반바지, 린넨 원피스' },
+    { min: 23, label: '23~27°C', items: '반팔, 얇은 셔츠, 반바지, 면바지' },
+    { min: 20, label: '20~22°C', items: '얇은 가디건, 긴팔 티, 면바지, 청바지' },
+    { min: 17, label: '17~19°C', items: '얇은 니트, 맨투맨, 가디건, 청바지' },
+    { min: 12, label: '12~16°C', items: '자켓, 가디건, 셔켓, 스타킹, 청바지' },
+    { min: 9, label: '9~11°C', items: '트렌치코트, 가죽 자켓, 니트, 청바지' },
+    { min: 5, label: '5~8°C', items: '코트, 히트텍, 니트, 기모 바지' },
+    { min: -99, label: '4°C 이하', items: '패딩, 두꺼운 코트, 목도리, 기모 제품' }
+  ];
+  const bandOf = t => BANDS.findIndex(b => t >= b.min);
+
+  // ---------- 퍼스널 컬러 ----------
+  const PALETTES = {
+    spring_warm: { name: '봄 웜톤', icon: '🌸', metal: '골드', bg: '#FFF1E4', acc: '#E2664F',
+      neutrals: [['아이보리', '#F6EBD5'], ['라이트 카멜', '#D3A26A'], ['웜 베이지', '#E2C9A6'], ['밀크 브라운', '#A9764D'], ['웜 네이비', '#33405C']],
+      accents: [['코랄', '#F47C68'], ['피치', '#FFB892'], ['라이트 옐로우', '#F7D774'], ['애플 그린', '#A8C66C'], ['웜 아쿠아', '#6FC3B8']],
+      avoid: '블랙·차가운 회색·버건디' },
+    summer_cool: { name: '여름 쿨톤', icon: '🌊', metal: '실버', bg: '#EEF2FA', acc: '#6F7FCF',
+      neutrals: [['소프트 화이트', '#F4F5F8'], ['쿨 그레이', '#A6ABB6'], ['그레이시 네이비', '#56627E'], ['로즈 베이지', '#D9C2C0'], ['슬레이트 그레이', '#5F6670']],
+      accents: [['라벤더', '#B9A9DE'], ['스카이 블루', '#9CC2E6'], ['로즈 핑크', '#E39AB2'], ['민트', '#A8DACB'], ['파우더 블루', '#B8CCE4']],
+      avoid: '머스타드·오렌지·카키' },
+    autumn_warm: { name: '가을 웜톤', icon: '🍁', metal: '골드', bg: '#F6EDE2', acc: '#B5583B',
+      neutrals: [['카멜', '#B07B3E'], ['딥 브라운', '#5C3B24'], ['베이지', '#D7C2A0'], ['카키', '#68683A'], ['오트밀', '#E6DAC3']],
+      accents: [['머스타드', '#C99A27'], ['버건디', '#7A2E33'], ['테라코타', '#B5583B'], ['올리브', '#7D7B3A'], ['브릭 오렌지', '#C2683A']],
+      avoid: '형광색·아이시 파스텔·순백' },
+    winter_cool: { name: '겨울 쿨톤', icon: '❄️', metal: '실버', bg: '#ECEEF3', acc: '#2848B8',
+      neutrals: [['블랙', '#1C1C1E'], ['차콜', '#3A3D44'], ['네이비', '#1F2A48'], ['퓨어 화이트', '#FAFAFA'], ['아이시 그레이', '#D5DAE2']],
+      accents: [['와인', '#6E1F3A'], ['로열 블루', '#2848B8'], ['푸시아', '#C2297A'], ['에메랄드', '#11806A'], ['아이시 핑크', '#F1D3E2']],
+      avoid: '베이지·카멜·머스타드' }
+  };
+  const DENIM = { light: ['라이트 워싱', '#8FB0D2'], mid: ['미드 워싱', '#4D6E99'], dark: ['다크 워싱', '#2C3E5E'] };
+  const lum = hex => { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+
+  // ---------- 아이템 DB ----------
+  // [이름, 분류, 적정 최저°, 적정 최고°, 성별(u공용/f여성), TPO(d일상·산책 o출근·등교 i면접 t데이트 a운동·여행), 스타일(c캐주얼 m미니멀 s스트릿 f오피스), 태그]
+  // 태그: rainok(비 오는 날 적합) rainbad(비 오는 날 부적합) rainonly fit-over fit-slim formal comfy + 모양 정보
+  const RAW = [
+    ['롱패딩', 'outer', -30, 3, 'u', 'da', 'cs', 'long puffy comfy fit-over'],
+    ['숏패딩', 'outer', -30, 5, 'u', 'dta', 'cs', 'short puffy comfy fit-over'],
+    ['울 롱코트', 'outer', -6, 9, 'u', 'doit', 'mf', 'long formal'],
+    ['더플코트', 'outer', -5, 8, 'u', 'dt', 'cm', 'mid fit-over'],
+    ['핸드메이드 하프코트', 'outer', -2, 10, 'f', 'doit', 'mf', 'mid formal'],
+    ['무스탕', 'outer', -8, 6, 'u', 'dt', 'sc', 'short rainbad'],
+    ['고어텍스 방수 자켓', 'outer', 2, 14, 'u', 'da', 'sc', 'mid rainok comfy fit-over'],
+    ['플리스 자켓', 'outer', 0, 12, 'u', 'da', 'cs', 'short comfy fit-over'],
+    ['워크 자켓', 'outer', 8, 16, 'u', 'd', 'sc', 'short fit-over'],
+    ['바시티 재킷', 'outer', 6, 14, 'u', 'dt', 'sc', 'short fit-over'],
+    ['트렌치코트', 'outer', 9, 17, 'u', 'doit', 'mf', 'long formal'],
+    ['가죽 자켓', 'outer', 7, 16, 'u', 'dt', 'sc', 'short fit-slim'],
+    ['스웨이드 자켓', 'outer', 8, 16, 'u', 'dt', 'mc', 'short rainbad'],
+    ['블레이저', 'outer', 10, 19, 'u', 'oit', 'fm', 'mid formal'],
+    ['트위드 자켓', 'outer', 9, 18, 'f', 'ot', 'fm', 'short formal fit-slim'],
+    ['데님 자켓', 'outer', 12, 19, 'u', 'dt', 'cs', 'short denim'],
+    ['바람막이', 'outer', 9, 20, 'u', 'da', 'sc', 'short rainok comfy'],
+    ['오버셔츠 (셔켓)', 'outer', 14, 21, 'u', 'dt', 'cs', 'mid fit-over'],
+    ['가디건', 'outer', 15, 22, 'u', 'dot', 'cmf', 'short knit comfy'],
+    ['크롭 가디건', 'outer', 16, 22, 'f', 'dt', 'cm', 'short crop knit fit-slim'],
+
+    ['반팔 티셔츠', 'top', 22, 40, 'u', 'da', 'csm', 'sleeve-short comfy'],
+    ['오버핏 반팔 티셔츠', 'top', 22, 40, 'u', 'dt', 'sc', 'sleeve-short comfy fit-over'],
+    ['린넨 셔츠', 'top', 23, 40, 'u', 'dot', 'mcf', 'sleeve-short formal fit-over'],
+    ['슬리브리스 탑', 'top', 26, 40, 'f', 'dt', 'sc', 'sleeve-none fit-slim'],
+    ['피케 폴로 셔츠', 'top', 20, 30, 'u', 'do', 'cf', 'sleeve-short formal'],
+    ['기능성 티셔츠', 'top', 15, 40, 'u', 'a', 's', 'sleeve-short comfy'],
+    ['드레스 셔츠', 'top', 8, 30, 'u', 'oi', 'f', 'sleeve-long formal fit-slim'],
+    ['블라우스', 'top', 17, 27, 'f', 'oit', 'fm', 'sleeve-long formal'],
+    ['긴팔 티셔츠', 'top', 17, 23, 'u', 'da', 'cm', 'sleeve-long comfy'],
+    ['스트라이프 긴팔 티', 'top', 15, 22, 'u', 'dt', 'cm', 'sleeve-long comfy'],
+    ['옥스포드 셔츠', 'top', 14, 24, 'u', 'dot', 'cfm', 'sleeve-long formal'],
+    ['오버핏 셔츠', 'top', 15, 25, 'u', 'dt', 'sc', 'sleeve-long fit-over'],
+    ['셔츠 + 니트 베스트', 'top', 11, 18, 'u', 'dot', 'fcm', 'sleeve-long formal'],
+    ['맨투맨', 'top', 10, 20, 'u', 'da', 'cs', 'sleeve-long comfy fit-over'],
+    ['후드티', 'top', 8, 19, 'u', 'da', 'sc', 'sleeve-long comfy fit-over'],
+    ['크롭 니트', 'top', 10, 18, 'f', 'dt', 'sc', 'sleeve-long crop knit fit-slim'],
+    ['라운드 니트', 'top', 3, 16, 'u', 'dot', 'mcf', 'sleeve-long knit'],
+    ['오버핏 니트', 'top', 2, 15, 'u', 'dt', 'cs', 'sleeve-long knit fit-over comfy'],
+    ['터틀넥 니트', 'top', -20, 10, 'u', 'doit', 'mf', 'sleeve-long knit fit-slim formal'],
+    ['기모 맨투맨', 'top', -15, 9, 'u', 'da', 'cs', 'sleeve-long comfy fit-over'],
+    ['기모 후드', 'top', -15, 8, 'u', 'da', 'sc', 'sleeve-long comfy fit-over'],
+
+    ['반바지', 'bottom', 25, 40, 'u', 'da', 'cs', 'shorts comfy'],
+    ['린넨 팬츠', 'bottom', 23, 40, 'u', 'dt', 'mc', 'wide comfy fit-over'],
+    ['면 슬랙스', 'bottom', 12, 29, 'u', 'doit', 'fm', 'pants formal'],
+    ['울 슬랙스', 'bottom', -10, 14, 'u', 'oit', 'fm', 'pants formal'],
+    ['와이드 슬랙스', 'bottom', 5, 26, 'u', 'dot', 'mf', 'wide formal fit-over'],
+    ['와이드 데님', 'bottom', 5, 26, 'u', 'dt', 'cs', 'wide denim fit-over'],
+    ['스트레이트 데님', 'bottom', 3, 26, 'u', 'dt', 'cm', 'pants denim'],
+    ['슬림 데님', 'bottom', 3, 24, 'u', 'dt', 'cm', 'pants denim fit-slim'],
+    ['카고 팬츠', 'bottom', 8, 25, 'u', 'da', 's', 'wide fit-over comfy'],
+    ['조거 팬츠', 'bottom', 8, 24, 'u', 'da', 'sc', 'pants comfy'],
+    ['나일론 트랙 팬츠', 'bottom', 10, 26, 'u', 'a', 's', 'pants rainok comfy'],
+    ['코듀로이 팬츠', 'bottom', -5, 14, 'u', 'dt', 'cm', 'pants'],
+    ['기모 조거 팬츠', 'bottom', -15, 9, 'u', 'da', 'cs', 'pants comfy'],
+    ['미니 스커트', 'bottom', 17, 32, 'f', 'dt', 's', 'skirt-mini fit-slim'],
+    ['미디 스커트', 'bottom', 12, 30, 'f', 'doit', 'mf', 'skirt-midi formal'],
+    ['플리츠 롱스커트', 'bottom', 5, 22, 'f', 'dt', 'm', 'skirt-long rainbad'],
+    ['울 스커트 + 타이츠', 'bottom', -5, 12, 'f', 'oit', 'fm', 'skirt-midi tights formal'],
+
+    ['린넨 원피스', 'dress', 23, 40, 'f', 'dt', 'mc', 'sleeve-short dress-long rainbad comfy'],
+    ['셔츠 원피스', 'dress', 16, 26, 'f', 'dot', 'mf', 'sleeve-long dress-midi'],
+    ['슬립 원피스 + 티셔츠', 'dress', 20, 30, 'f', 'dt', 'sc', 'sleeve-short dress-long rainbad'],
+    ['니트 원피스', 'dress', 0, 14, 'f', 'dt', 'm', 'sleeve-long dress-midi knit'],
+
+    ['샌들', 'shoes', 25, 40, 'u', 'dt', 'cm', ''],
+    ['스포츠 샌들', 'shoes', 22, 40, 'u', 'da', 'sc', 'rainok comfy'],
+    ['캔버스 스니커즈', 'shoes', 8, 32, 'u', 'dt', 'cs', 'rainbad comfy'],
+    ['가죽 스니커즈', 'shoes', -5, 30, 'u', 'dot', 'mcf', 'comfy'],
+    ['로퍼', 'shoes', 5, 28, 'u', 'oit', 'fm', 'formal'],
+    ['더비 슈즈', 'shoes', 0, 26, 'u', 'oi', 'f', 'formal'],
+    ['펌프스', 'shoes', 8, 30, 'f', 'oi', 'f', 'formal'],
+    ['첼시 부츠', 'shoes', -12, 14, 'u', 'dt', 'ms', ''],
+    ['퍼 부츠', 'shoes', -25, 3, 'u', 'd', 'c', 'comfy rainbad'],
+    ['러닝화', 'shoes', -5, 40, 'u', 'da', 'sc', 'comfy'],
+    ['고어텍스 트레킹화', 'shoes', -15, 22, 'u', 'da', 's', 'rainok comfy'],
+    ['레인부츠', 'shoes', 3, 30, 'u', 'dt', 'c', 'rainok rainonly'],
+    ['메리제인 플랫', 'shoes', 10, 28, 'f', 'ot', 'mf', ''],
+    ['앵클 부츠', 'shoes', -8, 14, 'f', 'doit', 'mf', 'formal']
+  ];
+  const ITEMS = RAW.map(([n, cat, min, max, g, tpo, st, tags], i) => {
+    const t = tags ? tags.split(' ') : [];
+    return { id: i, n, cat, min, max, g, tpo, st, tags: t, rain: t.includes('rainok') ? 'ok' : t.includes('rainbad') ? 'bad' : 'neutral' };
+  });
+  const STYLE_KEY = { casual: 'c', minimal: 'm', street: 's', office: 'f' };
+  const STYLE_LABEL = { c: '캐주얼', m: '미니멀', s: '스트릿', f: '오피스' };
+  const TPO = {
+    daily: { k: 'd', ko: '일상·산책', why: '일상·산책이라 활동하기 편한 아이템 위주로 골랐어요' },
+    office: { k: 'o', ko: '출근·등교', why: '출근·등교라 셔츠·슬랙스 같은 단정한 아이템을 우선했어요' },
+    interview: { k: 'i', ko: '면접', why: '면접이라 재킷·셔츠·슬랙스와 차분한 색을 우선했어요' },
+    date: { k: 't', ko: '데이트', why: '데이트라 포인트 컬러를 살린 조합을 우선했어요' },
+    active: { k: 'a', ko: '운동·여행', why: '운동·여행이라 움직이기 편한 기능성 아이템을 우선했어요' }
+  };
+
+  // ---------- 체형 (참고용 스타일 팁, 사이즈 판단 아님) ----------
+  function bodyInfo(p) {
+    const bmi = p.weight / ((p.height / 100) ** 2);
+    const fem = p.gender === 'female';
+    const short = fem ? p.height < 160 : p.height < 171;
+    const tall = fem ? p.height >= 169 : p.height >= 181;
+    const build = bmi < 18.5 ? 'slim' : bmi >= 25 ? 'solid' : 'normal';
+    let tip = '기본 핏 위주로 골랐어요';
+    if (short) tip = '크롭·하이웨이스트 기장을 조금 더 우선했어요';
+    else if (tall) tip = '롱 기장·와이드 핏을 조금 더 우선했어요';
+    if (build === 'slim') tip += ' (니트·레이어드로 볼륨감)';
+    if (build === 'solid') tip += ' (세로 라인이 살아나는 스트레이트 핏)';
+    return { bmi: Math.round(bmi * 10) / 10, short, tall, build, tip };
+  }
+
+  // ---------- 점수 ----------
+  function tempScore(it, T) {
+    if (T >= it.min && T <= it.max) {
+      const mid = (it.min + it.max) / 2, half = Math.max(3, (it.max - it.min) / 2);
+      return 1 - Math.min(1, Math.abs(T - mid) / half) * 0.3;
+    }
+    const d = T < it.min ? it.min - T : T - it.max;
+    return Math.max(0, 0.6 - d * 0.15);
+  }
+  function scoreItem(it, ctx, rng) {
+    const ts = tempScore(it, ctx.T);
+    if (ts <= 0) return -9;
+    if (it.tags.includes('rainonly') && !ctx.w.rain) return -9;
+    if (ctx.gender !== 'female' && it.g === 'f') return -9;
+    const t = it.tags;
+    let s = ts * 1.6;
+    // 외출 목적
+    s += it.tpo.includes(ctx.tpo) ? 0.45 : -0.2;
+    if (ctx.tpo === 'i') s += t.includes('formal') ? 0.6 : -1.0;
+    if (ctx.tpo === 'o') s += t.includes('formal') ? 0.3 : 0;
+    if (ctx.tpo === 'd') s += t.includes('comfy') ? 0.3 : 0;
+    if (ctx.tpo === 'a') s += (t.includes('comfy') ? 0.4 : 0) - (t.includes('formal') ? 0.5 : 0);
+    if ((ctx.tpo === 'o' || ctx.tpo === 'i') && (t.includes('shorts') || t.includes('skirt-mini') || t.includes('sleeve-none') || it.n === '샌들' || it.n === '스포츠 샌들')) s -= 1.0;
+    // 스타일 필터
+    if (ctx.styleKey) s += it.st.includes(ctx.styleKey) ? 0.6 : -0.4;
+    // 선호 핏
+    if (ctx.fit === 'over') s += t.includes('fit-over') ? 0.35 : t.includes('fit-slim') ? -0.25 : 0;
+    if (ctx.fit === 'slim') s += t.includes('fit-slim') ? 0.35 : t.includes('fit-over') ? -0.25 : 0;
+    // 체형 참고
+    const b = ctx.body;
+    if (b.short) { if (t.includes('crop') || t.includes('skirt-mini')) s += 0.15; if (t.includes('long') && it.cat === 'outer') s -= 0.1; }
+    if (b.tall && (t.includes('long') || t.includes('wide'))) s += 0.15;
+    if (b.build === 'solid') { if (t.includes('crop')) s -= 0.2; if (t.includes('pants')) s += 0.08; }
+    if (b.build === 'slim' && t.includes('knit')) s += 0.1;
+    // 비·바람
+    if (ctx.w.rain) s += it.rain === 'ok' ? 0.7 : it.rain === 'bad' ? -0.9 : 0;
+    if (ctx.w.wind >= 5 && it.cat === 'outer' && it.rain === 'ok') s += 0.25;
+    if (ctx.gender === 'female' && it.g === 'f') s += 0.1;
+    if (ctx.used.has(it.id)) s -= 0.7;
+    return s + rng() * 0.3;
+  }
+  function pick(cat, ctx, rng) {
+    let best = null, bs = -Infinity;
+    for (const it of ITEMS) {
+      if (it.cat !== cat) continue;
+      const s = scoreItem(it, ctx, rng);
+      if (s > bs) { bs = s; best = it; }
+    }
+    return bs > -5 ? { item: best, score: bs } : null;
+  }
+
+  // ---------- 색 ----------
+  function colorize(slot, it, pal, rng, taken, ctx) {
+    const pickFrom = arr => { const free = arr.filter(c => !taken.includes(c[1])); const src = free.length ? free : arr; return src[Math.floor(rng() * src.length)]; };
+    const byLum = [...pal.neutrals].sort((a, b) => lum(a[1]) - lum(b[1]));
+    let col;
+    if (it.tags.includes('denim')) col = ctx.w.rain || pal === PALETTES.winter_cool ? DENIM.dark : pal === PALETTES.summer_cool ? DENIM.light : DENIM.mid;
+    else if (ctx.tpo === 'i') col = slot === 'top' ? byLum[byLum.length - 1] : slot === 'shoes' ? byLum[0] : pickFrom(byLum.slice(0, 2));
+    else if (ctx.w.rain && (slot === 'bottom' || slot === 'shoes')) col = pickFrom(byLum.slice(0, 3));
+    else if (slot === 'top' || slot === 'dress') col = rng() < (ctx.tpo === 't' ? 0.8 : 0.6) ? pickFrom(pal.accents) : pickFrom(pal.neutrals);
+    else col = pickFrom(pal.neutrals);
+    taken.push(col[1]);
+    return { ...it, color: col[0], hex: col[1], label: `${col[0]} ${it.n}` };
+  }
+
+  // ---------- 코디 1벌 ----------
+  function buildOutfit(w, profile, opts, seed, used) {
+    const rng = mulberry32(seed);
+    const body = bodyInfo(profile);
+    const tpo = TPO[opts.tpo] || TPO.daily;
+    const ctx = { T: w.target, w, gender: profile.gender, tpo: tpo.k, styleKey: STYLE_KEY[opts.style] || null, fit: profile.fit, body, used };
+    const pal = PALETTES[profile.personalColor] || PALETTES.autumn_warm;
+    const taken = [], scores = [];
+    const o = { id: 'o' + seed.toString(36), seed };
+
+    const morning = w.slots[0].feels;
+    const morningCold = morning != null && morning < 16 && w.range >= 8;
+    const interviewJacket = ctx.tpo === 'i' && ctx.T <= 27;
+    if (ctx.T < 20 || morningCold || interviewJacket) {
+      const ctxO = ctx.T >= 20 ? { ...ctx, T: 18 } : ctx;
+      const r = pick('outer', ctxO, rng);
+      if (r) {
+        o.outer = colorize('outer', r.item, pal, rng, taken, ctx); scores.push(r.score);
+        if (ctx.T >= 20) o.outerNote = interviewJacket && !morningCold ? '면접장에서 착용, 이동 중엔 손에' : '아침·저녁용';
+      }
+    }
+    let useDress = false;
+    if (profile.gender === 'female' && ctx.tpo !== 'i' && ctx.tpo !== 'a') {
+      const d = pick('dress', ctx, rng);
+      if (d && rng() < 0.35 && d.score > 1.4) { o.dress = colorize('dress', d.item, pal, rng, taken, ctx); scores.push(d.score); useDress = true; }
+    }
+    if (!useDress) {
+      const tp = pick('top', ctx, rng); if (tp) { o.top = colorize('top', tp.item, pal, rng, taken, ctx); scores.push(tp.score); }
+      const bt = pick('bottom', ctx, rng); if (bt) { o.bottom = colorize('bottom', bt.item, pal, rng, taken, ctx); scores.push(bt.score); }
+    }
+    const sh = pick('shoes', ctx, rng); if (sh) { o.shoes = colorize('shoes', sh.item, pal, rng, taken, ctx); scores.push(sh.score); }
+
+    // 소품
+    const acc = [];
+    const a1 = pal.accents[Math.floor(rng() * pal.accents.length)];
+    if (ctx.T <= 8) acc.push({ n: '머플러', hex: a1[1], kind: 'scarf' });
+    if (ctx.T <= 4 && ctx.tpo !== 'i' && ctx.tpo !== 'o' && rng() < 0.6) acc.push({ n: '비니', hex: pal.neutrals[1][1], kind: 'beanie' });
+    if (ctx.T <= 2) acc.push({ n: '장갑', kind: 'misc' });
+    if (ctx.T >= 24 && (ctx.tpo === 'd' || ctx.tpo === 'a' || ctx.tpo === 't') && rng() < 0.55) acc.push({ n: rng() < 0.5 ? '볼캡' : '버킷햇', hex: pal.neutrals[0][1], kind: 'cap' });
+    if (ctx.T >= 21 && !w.rain && w.rainProb < 30 && ctx.tpo !== 'i') acc.push({ n: '선글라스', kind: 'misc' });
+    if (w.rain) acc.push({ n: w.snow ? '방수 장우산' : '장우산', kind: 'misc' });
+    if (w.air && w.air.bad) acc.push({ n: 'KF94 마스크', kind: 'misc' });
+    acc.push({ n: ctx.tpo === 'o' || ctx.tpo === 'i' ? '가죽 토트백' : ctx.tpo === 'a' ? '슬링백' : '미니 크로스백', kind: 'misc' });
+    if (ctx.tpo !== 'a') acc.push({ n: `${pal.metal} 액세서리`, kind: 'misc' });
+    o.acc = acc;
+
+    const parts = [o.outer, o.top, o.bottom, o.dress, o.shoes].filter(Boolean);
+    parts.forEach(x => used.add(x.id));
+
+    // 평가
+    const tAvg = parts.reduce((a, x) => a + tempScore(x, x === o.outer && ctx.T >= 20 ? 18 : ctx.T), 0) / parts.length;
+    const rainCovered = !w.rain || parts.some(x => x.rain === 'ok' && (x.cat === 'shoes' || x.cat === 'outer'));
+    const rainBad = w.rain ? parts.filter(x => x.rain === 'bad') : [];
+    let grade = tAvg >= 0.88 ? 2 : tAvg >= 0.72 ? 1 : 0;
+    if (!rainCovered || rainBad.length) grade = Math.max(0, grade - 1);
+    o.grade = ['보통', '적합', '최적'][grade];
+    o.gradeLevel = grade;
+    o.score = scores.reduce((a, b) => a + b, 0) / Math.max(1, scores.length) + (rainCovered ? 0 : -0.3);
+    o.styleMatch = ctx.styleKey ? parts.filter(x => x.st.includes(ctx.styleKey)).length / parts.length : 1;
+    o.tpoMatch = parts.filter(x => x.tpo.includes(ctx.tpo)).length / parts.length;
+
+    const stCount = {};
+    parts.forEach(x => x.st.split('').forEach(k => stCount[k] = (stCount[k] || 0) + 1));
+    const main = ctx.styleKey || Object.keys(stCount).sort((a, b) => stCount[b] - stCount[a])[0];
+    o.styleLabel = STYLE_LABEL[main];
+    const lead = o.outer || o.dress || o.top;
+    o.title = `${lead.color} ${ko(lead.n)} ${o.styleLabel} 룩`;
+
+    // ---- 추천 이유 ----
+    const T = ctx.T;
+    let cond;
+    if (w.rain) cond = `체감 ${T}℃이고 ${w.snow ? '눈' : '비'}가 예상돼서`;
+    else if (morningCold) cond = `낮 체감은 ${T}℃지만 아침엔 ${morning}℃까지 내려가서`;
+    else if (w.wind >= 6) cond = `체감 ${T}℃에 바람이 강해서`;
+    else cond = `체감 ${T}℃라서`;
+    const picks = [];
+    if (o.outer) picks.push(ko(o.outer.n));
+    const wetPick = parts.find(x => x.rain === 'ok' && x !== o.outer);
+    if (w.rain && wetPick) picks.push(wetPick.cat === 'shoes' && wetPick.n !== '레인부츠' ? '방수 신발(' + ko(wetPick.n) + ')' : ko(wetPick.n));
+    if (picks.length < 2) picks.push(ko((o.dress || o.top).n));
+    if (picks.length < 2 && o.bottom) picks.push(ko(o.bottom.n));
+    const pickText = picks.length === 1 ? eul(picks[0]) : wa(picks[0]) + ' ' + eul(picks[1]);
+    o.reason = `${cond} ${pickText} 추천했어요.`;
+
+    const why = [tpo.why];
+    const fitHits = parts.filter(x => x.tags.includes(ctx.fit === 'over' ? 'fit-over' : 'fit-slim'));
+    if (ctx.fit === 'over' && fitHits.length) why.push(`오버핏 선호를 반영해 ${fitHits.slice(0, 2).map(x => ko(x.n)).join('·')}의 넉넉한 실루엣을 골랐어요`);
+    if (ctx.fit === 'slim' && fitHits.length) why.push(`슬림핏 선호를 반영해 ${fitHits.slice(0, 2).map(x => ko(x.n)).join('·')}로 깔끔한 라인을 살렸어요`);
+    const cols = [...new Set(parts.map(x => x.color))].filter(c => !/워싱/.test(c)).slice(0, 3);
+    why.push(`${pal.name}에 어울리는 ${cols.join('·')} 색으로 맞췄어요`);
+    if (w.rain) {
+      if (w.rainFrom != null) why.push(`${w.rainFrom}시쯤부터 비 예보가 있어요`);
+      if (o.bottom && !o.bottom.tags.includes('denim') && lum(o.bottom.hex) < 0.55) why.push('비 오는 날이라 하의는 젖어도 티가 덜 나는 어두운 색으로 골랐어요');
+      if (!rainCovered) why.push('⚠️ 방수 아이템이 없어요. 우산을 꼭 챙기세요');
+    }
+    if (o.outerNote === '아침·저녁용') why.push(`일교차가 ${w.range}℃라 겉옷은 아침·저녁에 걸치세요`);
+    if (w.air && w.air.bad) why.push(`미세먼지 ${w.air.grade} — 마스크를 챙기세요`);
+    if (body.short || body.tall || body.build !== 'normal') why.push('체형 참고: ' + body.tip + ' (사이즈 판단은 아니에요)');
+    o.why = why;
+    o.target = T;
+    return o;
+  }
+
+  // ---------- 추천 3벌 (점수 순) ----------
+  function recommend(w, profile, opts, nonce) {
+    const used = new Set();
+    const base = hashStr(`${w.place}${w.date}${profile.gender}${profile.personalColor}${profile.fit}${opts.tpo}${opts.style}${nonce}`);
+    const cands = [], sigs = new Set();
+    for (let i = 0; i < 12 && cands.length < 6; i++) {
+      const o = buildOutfit(w, profile, opts, (base + i * 7919) >>> 0, used);
+      const sig = [o.outer, o.top, o.bottom, o.dress].filter(Boolean).map(x => x.id).join('-');
+      if (!sigs.has(sig)) { sigs.add(sig); cands.push(o); }
+    }
+    const top = cands.sort((a, b) => (b.gradeLevel - a.gradeLevel) || (b.score - a.score)).slice(0, 3);
+    const notices = [];
+    if (opts.style !== 'all' && top.some(o => o.styleMatch < 0.5)) notices.push({ kind: 'style', text: `선택한 '${STYLE_LABEL[STYLE_KEY[opts.style]]}' 조건에 꼭 맞는 아이템이 이 날씨에는 적어서, 비슷한 코디를 함께 보여드려요. 스타일을 '전체'로 바꾸면 더 잘 맞는 코디가 나와요.` });
+    if (top.every(o => o.gradeLevel === 0)) notices.push({ kind: 'temp', text: `체감 ${w.target}℃는 데이터에 있는 옷으로 딱 맞추기 어려운 기온이에요. 외출 목적이나 스타일 조건을 바꿔 보세요.` });
+    if (w.rain && top.every(o => o.why.some(x => x.startsWith('⚠️')))) notices.push({ kind: 'rain', text: '현재 조건에서는 방수 아이템을 넣기 어려워요. 외출 목적을 바꾸거나 우산을 꼭 챙기세요.' });
+    return { outfits: top, notices };
+  }
+
+  return { CITIES, forecastUrl, airUrl, parseForecast, manualDay, finalizeDay, wmo, BANDS, bandOf, PALETTES, ITEMS, TPO, recommend, bodyInfo, hashStr, lum };
+})();
+
+
+</script>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const savedProfile = store.get('wsl-profile', null);
+const S = {
+  place: store.get('wsl-place', { key: 'Seoul', ...WSL.CITIES.Seoul }),
+  profile: savedProfile || { gender: 'male', height: 175, weight: 68, fit: 'regular', personalColor: 'autumn_warm' },
+  opts: store.get('wsl-opts', { tpo: 'daily', style: 'all' }),
+  override: { on: false, temp: 15, rain: false, wind: 2 },
+  wx: { status: 'loading', days: null, at: null },
+  dayIdx: 0, nonce: 0, rec: { outfits: [], notices: [] }, weather: null,
+  lookbook: store.get('wsl-lookbook', []),
+  theme: store.get('wsl-theme', 'light')
+};
+if (!WSL.TPO[S.opts.tpo]) S.opts.tpo = 'daily';
+
+// ---------- 공통 ----------
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200); }
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16); const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const f = v => clamp(Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt), 0, 255);
+  return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+function applyTheme() {
+  document.documentElement.dataset.theme = S.theme;
+  $('#themeBtn').textContent = S.theme === 'dark' ? '☀️' : '🌙';
+  const pal = WSL.PALETTES[S.profile.personalColor];
+  document.documentElement.style.setProperty('--acc', pal.acc);
+  document.documentElement.style.setProperty('--acc-soft', S.theme === 'dark' ? shade(pal.acc, -0.72) : shade(pal.acc, 0.86));
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = S.theme === 'dark' ? '#111215' : '#F5F3EF';
+  try { if (window.AndroidBridge) window.AndroidBridge.setDark(S.theme === 'dark'); } catch (e) {}
+}
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const parseDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const hhmm = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+
+// ---------- 날씨 조회 ----------
+async function getJSON(url, ms) {
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), ms || 10000);
+  try { const r = await fetch(url, { signal: ctl.signal }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+  finally { clearTimeout(tm); }
+}
+const cacheKey = p => `wsl-wx-${p.lat.toFixed(2)},${p.lon.toFixed(2)}`;
+function daysFrom(entry) {
+  const days = WSL.parseForecast(entry.fc, entry.aq, S.place.ko).filter(d => d.date >= todayStr());
+  if (!days.length) throw new Error('expired');
+  if (days[0].date !== entry.fc.daily.time[0]) { days[0].isToday = true; delete days[0].now; }
+  return days;
+}
+let loadSeq = 0;
+async function loadWeather(force) {
+  const seq = ++loadSeq, p = S.place, key = cacheKey(p);
+  const cached = store.get(key, null);
+  S.override.on = false; S.dayIdx = 0;
+  if (!force && cached && Date.now() - cached.at < 20 * 60 * 1000) {
+    try { S.wx = { status: 'ok', days: daysFrom(cached), at: cached.at }; renderAll(); return; } catch (e) {}
+  }
+  S.wx = { status: 'loading', days: S.wx.days && S.wx.place === p.key ? S.wx.days : null, at: S.wx.at };
+  renderAll();
+  try {
+    const [fc, aq] = await Promise.all([getJSON(WSL.forecastUrl(p.lat, p.lon)), getJSON(WSL.airUrl(p.lat, p.lon), 6000).catch(() => null)]);
+    if (seq !== loadSeq) return;
+    const entry = { at: Date.now(), fc, aq };
+    const days = daysFrom(entry);
+    store.set(key, entry);
+    S.wx = { status: 'ok', days, at: entry.at, place: p.key };
+  } catch (e) {
+    if (seq !== loadSeq) return;
+    let days = null;
+    if (cached) { try { days = daysFrom(cached); } catch (x) {} }
+    S.wx = days ? { status: 'stale', days, at: cached.at, place: p.key } : { status: 'error', days: null, at: null };
+  }
+  renderAll();
+}
+function computeWeather() {
+  if (S.wx.status === 'manual') { S.weather = WSL.finalizeDay(WSL.manualDay(S.place.ko, S.override), S.override); return; }
+  if (!S.wx.days) { S.weather = null; return; }
+  const raw = S.wx.days[clamp(S.dayIdx, 0, S.wx.days.length - 1)];
+  S.weather = WSL.finalizeDay(raw, S.override);
+}
+
+// ---------- 날씨 카드 ----------
+function airColor(a) { return !a ? 'var(--sub)' : a.grade === '좋음' ? 'var(--good)' : a.bad ? 'var(--bad)' : 'var(--ink)'; }
+function renderWeather() {
+  const card = $('#wxCard'), st = S.wx.status, w = S.weather, o = S.override;
+  if (!w && st === 'loading') {
+    card.innerHTML = `<div class="wx-city">📍 ${esc(S.place.ko)} 날씨를 불러오는 중…</div>
+      <div class="skel" style="height:64px;margin-top:12px"></div><div class="skel" style="height:58px;margin-top:12px"></div><div class="skel" style="height:52px;margin-top:12px"></div>`;
+    return;
+  }
+  if (!w && st === 'error') {
+    card.innerHTML = `<div class="state"><div class="big">😢</div><h3>날씨를 불러오지 못했어요</h3>
+      <p>인터넷 연결을 확인하고 다시 시도해 주세요.<br>발표 중이라면 날씨를 직접 입력해서 코디를 볼 수도 있어요.</p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn pri sm" id="retryBtn">↻ 다시 시도</button><button class="btn ghost sm" id="manualBtn">날씨 직접 입력</button></div></div>`;
+    $('#retryBtn').onclick = () => loadWeather(true);
+    $('#manualBtn').onclick = () => { S.wx = { status: 'manual', days: null }; S.override = { on: true, temp: 15, rain: false, wind: 2 }; renderAll(); };
+    return;
+  }
+  const isToday = S.dayIdx === 0 && !w.manualOnly;
+  const d = parseDate(w.date);
+  const dayLabel = w.manualOnly ? '직접 입력' : isToday ? '오늘' : `${d.getMonth() + 1}/${d.getDate()} (${DOW[d.getDay()]})`;
+  const tips = [];
+  if (w.rain) tips.push(`${w.snow ? '눈' : '비'} 예보${w.rainFrom != null ? `(${w.rainFrom}시쯤부터)` : ''}가 있어요. 우산과 방수 신발을 챙기세요.`);
+  if (w.range >= 10 && w.slots[0].feels != null) tips.push(`일교차 ${w.range}℃, 아침 체감 ${w.slots[0].feels}℃라 겉옷이 필요해요.`);
+  if (w.air && w.air.bad) tips.push(`미세먼지 ${w.air.grade}, 마스크를 챙기세요.`);
+  if (w.wind >= 6) tips.push(`바람이 강해요(${w.wind}m/s). 체감온도가 더 낮아요.`);
+  if (!tips.length) tips.push(`체감 ${w.target}℃ 기준으로 '${WSL.BANDS[WSL.bandOf(w.target)].items}' 정도가 적당해요.`);
+  const src = w.manualOnly ? '직접 입력값' : o.on ? '예보 + 직접 조정' : 'Open-Meteo 예보';
+  const nowLine = isToday ? `현재 · 체감 <b>${w.feels}°</b> · ` : '';
+  card.innerHTML = `
+    <div class="wx-head">
+      <div class="wx-city">📍 ${esc(S.place.ko)} · ${dayLabel} ${S.dayIdx ? '<button class="link" id="backToday">오늘로</button>' : ''}</div>
+      <span class="badge">${src}</span>
+    </div>
+    <div class="wx-main">
+      <div class="wx-icon">${w.icon}</div>
+      <div><div class="wx-temp">${w.temp}°</div>
+        <div class="wx-meta">${esc(w.cond)} · ${nowLine}최저 ${w.lo}° / 최고 ${w.hi}°</div></div>
+    </div>
+    ${w.slots[0].feels != null ? `<div class="slots">${w.slots.map(s => `<div>${s.name}<b>${s.temp}°</b>체감 ${s.feels}°</div>`).join('')}</div>` : ''}
+    <div class="stat">
+      <div><span>강수확률</span><b>${w.rainProb}%</b></div>
+      <div><span>습도</span><b>${w.hum}%</b></div>
+      <div><span>바람</span><b>${w.wind}m/s</b></div>
+      <div><span>미세먼지</span><b style="color:${airColor(w.air)}">${w.air ? w.air.grade : '—'}</b></div>
+    </div>
+    <div class="tipbar">💡 <span>${tips.join(' ')}</span></div>
+    ${st === 'stale' ? `<div class="banner"><span>최신 날씨를 불러오지 못해 ${hhmm(S.wx.at)}에 받은 예보를 보여드려요.</span><button class="link" id="retryBtn" style="color:inherit;flex:none">다시 시도</button></div>` : ''}
+    ${st === 'loading' ? `<div class="banner"><span>최신 날씨로 업데이트하는 중…</span></div>` : ''}
+    <div class="foot">
+      <span>${w.manualOnly ? '<button class="link" id="retryBtn">실제 날씨 다시 불러오기</button>' : S.wx.at ? `${hhmm(S.wx.at)} 업데이트 · <button class="link" id="reloadBtn">새로고침</button>` : ''}</span>
+      ${w.manualOnly ? '' : `<button class="link" id="ovrToggle">${o.on ? '예보로 되돌리기' : '날씨 직접 조정 ▾'}</button>`}
+    </div>
+    <div class="ovr ${o.on ? 'open' : ''}">
+      <p style="font-size:11px;color:var(--sub)">시연용: 비 오는 날이나 추운 날 추천이 어떻게 바뀌는지 바로 확인할 수 있어요.</p>
+      <div class="row"><label>평균 기온</label><input type="range" id="oT" min="-15" max="38" value="${o.temp}"><output>${o.temp}°C</output></div>
+      <div class="row"><label>바람</label><input type="range" id="oW" min="0" max="12" step="0.5" value="${o.wind}"><output>${o.wind}m/s</output></div>
+      <div class="row"><label>비·눈</label><div class="seg" id="oR"><button data-v="0" class="${!o.rain ? 'on' : ''}">없음</button><button data-v="1" class="${o.rain ? 'on' : ''}">있음</button></div></div>
+    </div>`;
+  const bind = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  bind('#retryBtn', () => loadWeather(true));
+  bind('#reloadBtn', () => loadWeather(true));
+  bind('#backToday', () => { S.dayIdx = 0; S.override.on = false; renderAll(); });
+  bind('#ovrToggle', () => {
+    if (o.on) o.on = false;
+    else { o.on = true; o.temp = Math.round((w.hi + w.lo) / 2); o.wind = w.wind; o.rain = w.rain; }
+    renderAll();
+  });
+  const live = (id, key, unit) => {
+    const el = $(id); if (!el) return;
+    el.oninput = () => { el.nextElementSibling.textContent = el.value + unit; };
+    el.onchange = () => { o[key] = +el.value; renderAll(); };
+  };
+  live('#oT', 'temp', '°C'); live('#oW', 'wind', 'm/s');
+  $$('#oR button').forEach(b => b.onclick = () => { o.rain = b.dataset.v === '1'; renderAll(); });
+}
+
+// ---------- 프로필 ----------
+const GENDER_KO = { male: '남성', female: '여성', unisex: '공용' };
+const FIT_KO = { over: '오버핏', regular: '레귤러핏', slim: '슬림핏' };
+function renderProfile() {
+  const p = S.profile, pal = WSL.PALETTES[p.personalColor];
+  $('#pfCard').innerHTML = `
+    <div class="pf-top">
+      <div class="pf-ic">${pal.icon}</div>
+      <div style="flex:1;min-width:0"><span class="badge acc">${pal.name}</span>
+        <h3 style="margin-top:4px">${p.height}cm · ${p.weight}kg · ${GENDER_KO[p.gender]}</h3>
+        <p>${FIT_KO[p.fit]} 선호 · 목적: ${WSL.TPO[S.opts.tpo].ko}</p></div>
+    </div>
+    <div><p style="font-size:11px;color:var(--sub);margin-bottom:6px;font-weight:700">어울리는 컬러</p>
+      <div class="swatches">${[...pal.neutrals.slice(0, 4), ...pal.accents.slice(0, 4)].map(c => `<span class="sw" title="${c[0]}" style="background:${c[1]}"></span>`).join('')}</div>
+      <p style="font-size:11px;color:var(--sub);margin-top:6px">피하면 좋은 색: ${pal.avoid} · 액세서리는 ${pal.metal}</p>
+    </div>
+    <button class="btn ghost sm" id="pfEdit" style="align-self:flex-start">프로필 수정</button>`;
+  $('#pfEdit').onclick = openProfile;
+}
+
+// ---------- 일러스트 ----------
+function figure(o, p) {
+  const b = WSL.bodyInfo(p), fem = p.gender === 'female', uni = p.gender === 'unisex';
+  const sx = clamp(0.86 + (b.bmi - 18) * 0.035, 0.86, 1.18).toFixed(3);
+  const sy = clamp(p.height / (fem ? 163 : 176), 0.93, 1.07).toFixed(3);
+  const skin = '#EBC8AC', hair = '#2A2220', ln = 'rgba(0,0,0,.16)';
+  const T = o.dress || o.top || { hex: '#ddd', tags: [], n: '' };
+  const topHex = T.hex, botHex = o.dress ? o.dress.hex : (o.bottom ? o.bottom.hex : '#555');
+  const sleeve = (T.tags.find(t => t.startsWith('sleeve-')) || 'sleeve-long').slice(7);
+  const bt = o.bottom ? o.bottom.tags : [];
+  const skirtTag = o.dress ? (o.dress.tags.includes('dress-long') ? 'long' : 'midi') : (bt.find(t => t.startsWith('skirt-')) || '').slice(6);
+  const shorts = bt.includes('shorts'), wide = bt.includes('wide');
+  const legFill = bt.includes('tights') ? '#2B2B30' : skin;
+  let g = '';
+  if (fem) g += `<path d="M82,36 Q80,16 100,15 Q120,16 118,36 L122,80 Q100,86 78,80 Z" fill="${hair}"/>`;
+  if (uni) g += `<path d="M84,36 Q82,16 100,15 Q118,16 116,36 L117,56 Q100,60 83,56 Z" fill="${hair}"/>`;
+  const armL = 'M66,66 L78,66 L76,150 L64,150 Z', armR = 'M122,66 L134,66 L136,150 L124,150 Z';
+  if (sleeve === 'long') g += `<path d="${armL}" fill="${topHex}" stroke="${ln}"/><path d="${armR}" fill="${topHex}" stroke="${ln}"/>`;
+  else {
+    g += `<path d="${armL}" fill="${skin}"/><path d="${armR}" fill="${skin}"/>`;
+    if (sleeve === 'short') g += `<path d="M66,66 L78,66 L77.5,96 L65,96 Z" fill="${topHex}" stroke="${ln}"/><path d="M122,66 L134,66 L135,96 L122.5,96 Z" fill="${topHex}" stroke="${ln}"/>`;
+  }
+  if (skirtTag || shorts) g += `<path d="M81,148 L98,148 L97,268 L85,268 Z" fill="${legFill}"/><path d="M102,148 L119,148 L115,268 L103,268 Z" fill="${legFill}"/>`;
+  else if (wide) g += `<path d="M75,146 L99.5,146 L99.5,268 L75,268 Z" fill="${botHex}" stroke="${ln}"/><path d="M100.5,146 L125,146 L125,268 L100.5,268 Z" fill="${botHex}" stroke="${ln}"/>`;
+  else g += `<path d="M78,146 L99.5,146 L98,268 L83,268 Z" fill="${botHex}" stroke="${ln}"/><path d="M100.5,146 L122,146 L117,268 L102,268 Z" fill="${botHex}" stroke="${ln}"/>`;
+  if (!skirtTag && !shorts) g += `<rect x="77" y="134" width="46" height="16" rx="3" fill="${botHex}"/>`;
+  if (shorts) g += `<path d="M76,136 L124,136 L127,186 L102,186 L100,162 L98,186 L73,186 Z" fill="${botHex}" stroke="${ln}"/>`;
+  const sh = o.shoes ? o.shoes.hex : '#333', boot = o.shoes && /부츠|트레킹/.test(o.shoes.n);
+  if (boot) g += `<path d="M84,244 L97,244 L97,268 L102,276 L80,276 L82,268 Z" fill="${sh}" stroke="${ln}"/><path d="M103,244 L116,244 L118,268 L120,276 L98,276 L103,268 Z" fill="${sh}" stroke="${ln}"/>`;
+  else g += `<ellipse cx="89" cy="272" rx="11" ry="5.5" fill="${sh}" stroke="${ln}"/><ellipse cx="111" cy="272" rx="11" ry="5.5" fill="${sh}" stroke="${ln}"/>`;
+  const waist = skirtTag || shorts ? 138 : 140;
+  g += `<path d="M70,68 Q70,59 81,58 L119,58 Q130,59 130,68 L124,${waist} L76,${waist} Z" fill="${topHex}" stroke="${ln}"/>`;
+  if (T.n.includes('스트라이프')) for (let y = 72; y < 138; y += 10) g += `<line x1="73" y1="${y}" x2="127" y2="${y}" stroke="${shade(topHex, -0.35)}" stroke-width="2.5" opacity=".5"/>`;
+  if (T.n.includes('니트 베스트')) g += `<path d="M80,62 L100,90 L120,62 L123,138 L77,138 Z" fill="${shade(topHex, -0.25)}"/>`;
+  if (T.n.includes('셔츠') && !o.outer) g += `<path d="M93,58 L100,68 L107,58" fill="none" stroke="${shade(topHex, -0.3)}" stroke-width="2"/><line x1="100" y1="68" x2="100" y2="${waist}" stroke="${shade(topHex, -0.2)}" stroke-width="1.2"/>`;
+  if (skirtTag) {
+    const e = { mini: 184, midi: 222, long: 252 }[skirtTag] || 222, spread = (e - 136) * 0.16;
+    g += `<path d="M76,${o.dress ? 128 : 134} L124,${o.dress ? 128 : 134} L${124 + spread},${e} L${76 - spread},${e} Z" fill="${botHex}" stroke="${ln}"/>`;
+  }
+  g += `<rect x="94" y="46" width="12" height="14" fill="${skin}"/><circle cx="100" cy="35" r="15" fill="${skin}"/>`;
+  g += fem ? `<path d="M85,37 Q86,19 100,19 Q114,19 115,37 Q106,28 96,30 Q90,31 85,37 Z" fill="${hair}"/>`
+           : `<path d="M85,34 Q85,18 100,18 Q115,18 115,34 Q108,25 100,26 Q92,25 85,34 Z" fill="${hair}"/>`;
+  if (o.outer) {
+    const oc = o.outer.hex, t = o.outer.tags, e = t.includes('long') ? 232 : t.includes('mid') ? 186 : 150, sp = (e - 150) * 0.07;
+    g += `<path d="M63,64 L79,64 L77,149 L61,149 Z" fill="${oc}" stroke="${ln}"/><path d="M121,64 L137,64 L139,149 L123,149 Z" fill="${oc}" stroke="${ln}"/>`;
+    g += `<path d="M69,68 Q69,57 82,56 L96,59 L93,${e} L${66 - sp},${e} Z" fill="${oc}" stroke="${ln}"/><path d="M131,68 Q131,57 118,56 L104,59 L107,${e} L${134 + sp},${e} Z" fill="${oc}" stroke="${ln}"/>`;
+    if (t.includes('puffy')) for (let y = 74; y < e; y += 14) g += `<line x1="${66 - sp}" y1="${y}" x2="94" y2="${y}" stroke="rgba(0,0,0,.14)" stroke-width="1.5"/><line x1="106" y1="${y}" x2="${134 + sp}" y2="${y}" stroke="rgba(0,0,0,.14)" stroke-width="1.5"/>`;
+    else g += `<path d="M82,56 L92,76 L96,59 Z" fill="${shade(oc, -0.18)}"/><path d="M118,56 L108,76 L104,59 Z" fill="${shade(oc, -0.18)}"/>`;
+  }
+  g += `<circle cx="70" cy="154" r="5" fill="${skin}"/><circle cx="130" cy="154" r="5" fill="${skin}"/>`;
+  for (const a of o.acc || []) {
+    if (a.kind === 'scarf') g += `<path d="M87,49 L113,49 L115,62 L85,62 Z" fill="${a.hex}"/><path d="M104,60 L113,60 L111,96 L102,96 Z" fill="${shade(a.hex, -0.1)}"/>`;
+    if (a.kind === 'beanie') g += `<path d="M84,31 Q84,13 100,13 Q116,13 116,31 Z" fill="${a.hex}"/><rect x="83" y="27" width="34" height="7" rx="3" fill="${shade(a.hex, -0.15)}"/>`;
+    if (a.kind === 'cap') g += `<path d="M85,29 Q85,16 100,16 Q115,16 115,29 Z" fill="${a.hex}" stroke="${ln}"/><path d="M98,27 L125,29 L98,31 Z" fill="${shade(a.hex, -0.2)}"/>`;
+  }
+  return `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(o.title)} 색 조합 미리보기"><ellipse cx="100" cy="282" rx="48" ry="6" fill="rgba(0,0,0,.1)"/><g transform="translate(100 282) scale(${sx} ${sy}) translate(-100 -282)">${g}</g></svg>`;
+}
+
+// ---------- 코디 카드 ----------
+function itemRows(o) {
+  const rows = [];
+  if (o.outer) rows.push(['아우터', o.outer.label + (o.outerNote ? ` (${o.outerNote})` : ''), o.outer.hex, o.outer]);
+  if (o.dress) rows.push(['원피스', o.dress.label, o.dress.hex, o.dress]);
+  if (o.top) rows.push(['상의', o.top.label, o.top.hex, o.top]);
+  if (o.bottom) rows.push(['하의', o.bottom.label, o.bottom.hex, o.bottom]);
+  if (o.shoes) rows.push(['신발', o.shoes.label, o.shoes.hex, o.shoes]);
+  return rows;
+}
+const isSaved = o => S.lookbook.some(l => l.o.id === o.id);
+function cardHTML(o, p, idx, mode) {
+  const pal = WSL.PALETTES[p.personalColor];
+  const bg = S.theme === 'dark' ? shade(pal.bg, -0.8) : pal.bg;
+  const rainIcon = it => (o._rain && it.rain === 'ok') ? ' <span class="badge g2" style="padding:1px 6px">방수</span>' : '';
+  return `<article class="card oc">
+    <div class="oc-fig" style="background:${bg}">
+      <span class="badge rank">${mode === 'lb' ? esc(o._meta || '') : `추천 ${idx + 1}`}</span>
+      <span class="cap">색 조합 미리보기</span>
+      ${figure(o, p)}
+    </div>
+    <div class="oc-body">
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge g${o.gradeLevel}">날씨 ${o.grade}</span><span class="badge acc">${esc(o.styleLabel)}</span><span class="badge">체감 ${o.target}℃ 기준</span></div>
+      <h4>${esc(o.title)}</h4>
+      <div class="reason">💬 ${esc(o.reason)}</div>
+      <ul class="items">${itemRows(o).map(r => `<li><span class="k">${r[0]}</span><span class="dot" style="background:${r[2]}"></span><span>${esc(r[1])}${rainIcon(r[3])}</span></li>`).join('')}
+        <li><span class="k">소품</span><span>${esc(o.acc.map(a => a.n).join(' · '))}</span></li></ul>
+      <details class="why"><summary>추천 이유 자세히</summary><ul>${o.why.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details>
+      <div class="oc-act">
+        <button class="btn ghost sm" data-shop="${idx}" data-mode="${mode}">🔍 쇼핑몰에서 검색</button>
+        ${mode === 'lb' ? `<button class="btn ghost sm" data-del="${idx}">🗑️ 삭제</button>`
+          : `<button class="btn ${isSaved(o) ? 'acc' : 'ghost'} sm" data-save="${idx}">${isSaved(o) ? '💖 저장됨' : '🤍 룩북 저장'}</button>`}
+      </div>
+    </div></article>`;
+}
+function renderOutfits() {
+  const box = $('#cards'), nb = $('#notices');
+  if (!S.weather) {
+    S.rec = { outfits: [], notices: [] };
+    nb.innerHTML = '';
+    box.innerHTML = `<div class="empty card" style="grid-column:1/-1"><div>${S.wx.status === 'loading' ? '⏳' : '🌤️'}</div>${S.wx.status === 'loading' ? '날씨를 불러오면 코디를 추천해 드려요.' : '날씨 정보가 있어야 코디를 추천할 수 있어요.<br>위에서 다시 시도하거나 날씨를 직접 입력해 주세요.'}</div>`;
+    return;
+  }
+  S.rec = WSL.recommend(S.weather, S.profile, S.opts, S.nonce);
+  S.rec.outfits.forEach(o => { o._rain = S.weather.rain; });
+  nb.innerHTML = S.rec.notices.map(n => `<div class="notice">ℹ️ ${esc(n.text)}${n.kind === 'style' ? '<button class="btn ghost sm" data-act="style-all">스타일 \'전체\'로 보기</button>' : ''}</div>`).join('');
+  box.innerHTML = S.rec.outfits.length ? S.rec.outfits.map((o, i) => cardHTML(o, S.profile, i, 'today')).join('')
+    : `<div class="empty card" style="grid-column:1/-1"><div>🧐</div>지금 조건에 맞는 코디가 없어요.<br>외출 목적이나 스타일을 바꿔 보세요.</div>`;
+}
+function persistLb() { store.set('wsl-lookbook', S.lookbook); $('#lbCount').textContent = S.lookbook.length; }
+$('#notices').addEventListener('click', e => {
+  if (e.target.closest('[data-act=style-all]')) { S.opts.style = 'all'; store.set('wsl-opts', S.opts); segOpts('#styleSeg', 'style'); renderOutfits(); }
+});
+$('#cards').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.shop !== undefined) return openShop(S.rec.outfits[+t.dataset.shop]);
+  if (t.dataset.save !== undefined) {
+    const o = S.rec.outfits[+t.dataset.save];
+    const at = S.lookbook.findIndex(l => l.o.id === o.id);
+    if (at >= 0) { S.lookbook.splice(at, 1); toast('룩북 저장을 취소했어요'); }
+    else {
+      const w = S.weather, d = parseDate(w.date);
+      S.lookbook.unshift({ o: { ...o, _meta: `${d.getMonth() + 1}/${d.getDate()} ${S.place.ko} ${w.icon} ${w.target}℃` }, p: { ...S.profile } });
+      toast('💖 룩북에 저장했어요');
+    }
+    persistLb();
+    const on = isSaved(o);
+    t.className = `btn ${on ? 'acc' : 'ghost'} sm`; t.textContent = on ? '💖 저장됨' : '🤍 룩북 저장';
+    renderLookbook();
+  }
+});
+$('#lbGrid').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.shop !== undefined) return openShop(S.lookbook[+t.dataset.shop].o);
+  if (t.dataset.del !== undefined) { S.lookbook.splice(+t.dataset.del, 1); persistLb(); renderLookbook(); renderOutfits(); toast('룩북에서 삭제했어요'); }
+});
+function renderLookbook() {
+  $('#lbCount').textContent = S.lookbook.length;
+  $('#lbGrid').innerHTML = S.lookbook.length ? S.lookbook.map((l, i) => cardHTML(l.o, l.p, i, 'lb')).join('')
+    : `<div class="empty card" style="grid-column:1/-1"><div>👗</div>아직 저장한 코디가 없어요.<br>마음에 드는 코디의 '🤍 룩북 저장'을 눌러 보세요.</div>`;
+}
+
+// ---------- 주간 ----------
+function renderWeek() {
+  const box = $('#week');
+  if (!S.wx.days) { box.innerHTML = `<div class="empty card"><div>📅</div>${S.wx.status === 'manual' ? '직접 입력 모드에서는 주간 예보가 없어요.' : '날씨를 불러오면 주간 플랜을 보여드려요.'}</div>`; return; }
+  box.innerHTML = S.wx.days.map((raw, i) => {
+    const w = WSL.finalizeDay(raw, null);
+    const o = WSL.recommend(w, S.profile, S.opts, 0).outfits[0];
+    const d = parseDate(w.date);
+    const key = o ? [o.outer, o.dress || o.top, o.bottom].filter(Boolean) : [];
+    return `<button class="card wk ${i === S.dayIdx ? 'on' : ''}" data-day="${i}">
+      <div class="d">${i === 0 ? '오늘' : i === 1 ? '내일' : DOW[d.getDay()] + '요일'}<small>${d.getMonth() + 1}/${d.getDate()}</small></div>
+      <div class="i">${w.icon}</div>
+      <div class="t"><b>${w.lo}° / ${w.hi}°</b><br><span style="color:var(--sub);font-size:11px">강수 ${w.rainProb}% · 체감 ${w.target}℃</span></div>
+      <div class="o">${key.map(x => `<span class="badge"><span class="dot" style="width:10px;height:10px;background:${x.hex}"></span>${esc(x.n)}</span>`).join('')}${w.rain ? '<span class="badge acc">☔ 우산</span>' : ''}</div>
+    </button>`;
+  }).join('');
+}
+$('#week').addEventListener('click', e => {
+  const b = e.target.closest('[data-day]'); if (!b) return;
+  S.dayIdx = +b.dataset.day; S.override.on = false; S.nonce = 0; renderAll();
+  $$('.tab')[0].click(); window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ---------- 가이드 ----------
+function renderGuide() {
+  const cur = S.weather ? WSL.bandOf(S.weather.target) : -1;
+  $('#guide').innerHTML = WSL.BANDS.map((b, i) => `<div class="card ${i === cur ? 'on' : ''}"><b>${b.label}</b><span>${b.items}${i === cur ? ' <span class="badge acc">지금</span>' : ''}</span></div>`).join('');
+}
+
+// ---------- 쇼핑 ----------
+function openShop(o) {
+  const q = s => encodeURIComponent(s.replace(/\s*\(.+\)\s*$/, '').replace(/ \+ /g, ' '));
+  $('#shopList').innerHTML = itemRows(o).map(r => {
+    const name = r[1].replace(/\s*\(.+\)\s*$/, '');
+    return `<div class="shop-row"><b><span class="dot" style="background:${r[2]}"></span>${esc(name)}</b>
+    <div class="stores">
+      <a href="https://www.musinsa.com/search/musinsa/integration?q=${q(name)}" target="_blank" rel="noopener">무신사</a>
+      <a href="https://search.29cm.co.kr/?keyword=${q(name)}" target="_blank" rel="noopener">29CM</a>
+      <a href="https://www.wconcept.co.kr/Search?keyword=${q(name)}" target="_blank" rel="noopener">W컨셉</a>
+      <a href="https://search.shopping.naver.com/search/all?query=${q(name)}" target="_blank" rel="noopener">네이버쇼핑</a>
+    </div></div>`;
+  }).join('');
+  $('#shopModal').classList.add('open');
+}
+
+// ---------- 프로필 모달 ----------
+let draft = null;
+function segBind(sel, key) {
+  $$(sel + ' button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === draft[key]);
+    b.onclick = () => { draft[key] = b.dataset.v; segBind(sel, key); };
+  });
+}
+function renderPcPick() {
+  $('#mPc').innerHTML = Object.entries(WSL.PALETTES).map(([k, p]) => `<button class="pc ${draft.personalColor === k ? 'on' : ''}" data-pc="${k}"><b>${p.icon} ${p.name}</b><div class="swatches">${[...p.neutrals.slice(0, 2), ...p.accents.slice(0, 3)].map(c => `<span class="sw" style="background:${c[1]}"></span>`).join('')}</div></button>`).join('');
+  $$('#mPc .pc').forEach(b => b.onclick = () => { draft.personalColor = b.dataset.pc; renderPcPick(); });
+}
+const quizAns = {};
+$$('#quiz .seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+  quizAns[seg.dataset.q] = b.dataset.v;
+  seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  if (quizAns.tone && quizAns.metal && quizAns.depth) {
+    const warmN = [quizAns.tone, quizAns.metal].filter(v => v === 'warm').length;
+    const isWarm = warmN === 2 ? true : warmN === 0 ? false : quizAns.metal === 'warm';
+    const res = isWarm ? (quizAns.depth === 'light' ? 'spring_warm' : 'autumn_warm') : (quizAns.depth === 'light' ? 'summer_cool' : 'winter_cool');
+    draft.personalColor = res; renderPcPick();
+    $('#quizRes').textContent = `→ ${WSL.PALETTES[res].name}일 가능성이 높아요! (간이 진단이라 참고만 해 주세요)`;
+  }
+}));
+function pairInput(rangeSel, numSel, key, min, max) {
+  const r = $(rangeSel), n = $(numSel);
+  r.value = n.value = draft[key];
+  r.oninput = () => { draft[key] = +r.value; n.value = r.value; };
+  n.oninput = () => { const v = +n.value; if (v >= min && v <= max) { draft[key] = v; r.value = v; } };
+  n.onblur = () => { const v = clamp(Math.round(+n.value || draft[key]), min, max); draft[key] = v; n.value = r.value = v; };
+}
+function openProfile() {
+  draft = { ...S.profile };
+  segBind('#mGender', 'gender'); segBind('#mFit', 'fit'); renderPcPick();
+  pairInput('#mH', '#mHn', 'height', 140, 200);
+  pairInput('#mW', '#mWn', 'weight', 35, 130);
+  $('#pfModal').classList.add('open');
+}
+$('#quizToggle').onclick = () => $('#quiz').classList.toggle('open');
+$('#pfSave').onclick = () => {
+  $('#mHn').onblur(); $('#mWn').onblur();
+  S.profile = { ...draft }; store.set('wsl-profile', S.profile);
+  $('#pfModal').classList.remove('open');
+  S.nonce = 0; applyTheme(); renderAll(); toast('✨ 프로필에 맞춰 코디를 다시 골랐어요');
+};
+
+// ---------- 위치 ----------
+function fillCities() {
+  const opts = Object.entries(WSL.CITIES).map(([k, c]) => `<option value="${k}">${c.ko}</option>`);
+  if (S.place.key === 'here') opts.unshift(`<option value="here">📍 ${esc(S.place.ko)}</option>`);
+  $('#city').innerHTML = opts.join('');
+  $('#city').value = S.place.key;
+}
+$('#city').onchange = e => {
+  const k = e.target.value; if (k === 'here') return;
+  S.place = { key: k, ...WSL.CITIES[k] }; store.set('wsl-place', S.place); fillCities(); loadWeather(false);
+};
+$('#locBtn').onclick = () => {
+  if (!navigator.geolocation) return toast('이 기기에서는 위치를 사용할 수 없어요');
+  const btn = $('#locBtn'); btn.disabled = true; btn.textContent = '…';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = +pos.coords.latitude.toFixed(3), lon = +pos.coords.longitude.toFixed(3);
+    let name = '현재 위치';
+    try {
+      const j = await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`, 5000);
+      name = j.city || j.locality || j.principalSubdivision || name;
+    } catch (e) {}
+    S.place = { key: 'here', ko: name, lat, lon }; store.set('wsl-place', S.place);
+    btn.disabled = false; btn.textContent = '📍'; fillCities(); loadWeather(true); toast(`📍 ${name} 날씨로 바꿨어요`);
+  }, () => { btn.disabled = false; btn.textContent = '📍'; toast('위치를 가져오지 못했어요. 도시를 직접 골라 주세요'); },
+  { timeout: 10000, maximumAge: 10 * 60 * 1000, enableHighAccuracy: false });
+};
+
+// ---------- 공통 바인딩 ----------
+function segOpts(sel, key) {
+  $$(sel + ' button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === S.opts[key]);
+    b.onclick = () => { S.opts[key] = b.dataset.v; store.set('wsl-opts', S.opts); S.nonce = 0; segOpts(sel, key); renderProfile(); renderOutfits(); renderWeek(); };
+  });
+}
+function renderAll() { computeWeather(); renderWeather(); renderProfile(); renderOutfits(); renderWeek(); renderGuide(); renderLookbook(); }
+$('#themeBtn').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; store.set('wsl-theme', S.theme); applyTheme(); renderOutfits(); renderLookbook(); };
+$('#refreshBtn').onclick = () => { if (!S.weather) return; S.nonce++; renderOutfits(); toast('다른 조합을 골랐어요'); };
+$$('.tab').forEach(t => t.onclick = () => {
+  $$('.tab').forEach(x => x.classList.toggle('on', x === t));
+  $$('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + t.dataset.tab));
+});
+let clearArm = 0;
+$('#clearLb').onclick = () => {
+  if (!S.lookbook.length) return;
+  if (Date.now() - clearArm > 2500) { clearArm = Date.now(); toast('한 번 더 누르면 전체 삭제돼요'); return; }
+  S.lookbook = []; persistLb(); renderLookbook(); renderOutfits(); toast('룩북을 비웠어요');
+};
+$$('.modal').forEach(m => m.addEventListener('click', e => {
+  if (e.target === m || e.target.hasAttribute('data-close')) {
+    m.classList.remove('open');
+    if (m.id === 'pfModal' && !store.get('wsl-profile', null)) { store.set('wsl-profile', S.profile); toast('기본 프로필로 시작해요. 언제든 수정할 수 있어요'); }
+  }
+}));
+// 안드로이드 뒤로 가기: 처리했으면 true
+window.wslBack = () => {
+  const open = $$('.modal.open');
+  if (open.length) { open.forEach(m => m.classList.remove('open')); return true; }
+  const tab = $('.tab.on');
+  if (tab && tab.dataset.tab !== 'today') { $$('.tab')[0].click(); return true; }
+  if (S.dayIdx !== 0) { S.dayIdx = 0; S.override.on = false; renderAll(); return true; }
+  return false;
+};
+window.addEventListener('online', () => { if (S.wx.status === 'error' || S.wx.status === 'stale') loadWeather(true); });
+
+applyTheme(); fillCities(); segOpts('#tpoSeg', 'tpo'); segOpts('#styleSeg', 'style');
+loadWeather(false);
+if (!savedProfile) setTimeout(openProfile, 300);
+})();
+</script>
+</body>
+</html>

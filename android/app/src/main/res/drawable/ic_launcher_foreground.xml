@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 해 -->
+    <path android:fillColor="#F7D774"
+        android:pathData="M72,30 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+    <!-- 우산 -->
+    <path android:fillColor="#E2664F"
+        android:pathData="M30,58 C30,44 41,35 54,35 C67,35 78,44 78,58 Q72,53 66,58 Q60,53 54,58 Q48,53 42,58 Q36,53 30,58 Z" />
+    <path android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,58 L54,74 Q54,79 59,79 Q63,79 63,75" />
+</vector>
