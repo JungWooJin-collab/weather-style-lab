@@ -101,9 +101,18 @@ select,.ibtn{height:36px;border:1px solid var(--line);background:var(--card);bor
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:900px){.cards{grid-template-columns:1fr}}
 .oc{overflow:hidden;display:flex;flex-direction:column}
-.oc-fig{position:relative;height:290px;display:grid;place-items:center}
+.oc-fig{position:relative;height:340px;overflow:hidden;display:grid;place-items:center}
 .oc-fig svg{height:100%;width:auto}
 .oc-fig .rank{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.88);color:#333}
+.oc-fig img.photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+.oc-fig.has-photo img.photo{opacity:1}
+.oc-fig.has-photo.show-illu img.photo{opacity:0}
+.oc-fig .pcredit{position:absolute;bottom:10px;right:10px;font-size:10px;color:#fff;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:99px;display:none;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oc-fig .pcredit a{color:#fff}
+.oc-fig.has-photo .pcredit{display:block}
+.oc-fig.has-photo.show-illu .pcredit{display:none}
+.oc-fig .ftog{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;background:rgba(255,255,255,.88);color:#333;padding:5px 10px;border-radius:99px;display:none}
+.oc-fig.has-photo .ftog{display:block}
 .oc-fig .cap{position:absolute;bottom:10px;left:12px;font-size:10px;font-weight:700;color:#555;background:rgba(255,255,255,.75);padding:2px 8px;border-radius:99px}
 .oc-body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
 .oc h4{font-size:16px;letter-spacing:-.02em}
@@ -214,7 +223,7 @@ details.why ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:3px}
     <div class="gd" id="guide"></div>
   </div>
 
-  <p class="credit">날씨 데이터: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)<br>코디 추천은 날씨·프로필 조건에 점수를 매기는 규칙 기반 참고용이에요.</p>
+  <p class="credit">날씨 데이터: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · 참고 사진: <a href="https://unsplash.com/?utm_source=weather_style_lab&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a><br>코디 추천은 날씨·프로필 조건에 점수를 매기는 규칙 기반 참고용이에요.</p>
 </div>
 
 <div class="modal" id="pfModal">
@@ -742,6 +751,38 @@ const WSL = (() => {
     return o;
   }
 
+
+  // ---------- 사진 검색어 (Unsplash, 영어) ----------
+  const ITEM_EN = {
+    '롱패딩': 'long puffer coat', '숏패딩': 'puffer jacket', '울 롱코트': 'long wool coat', '더플코트': 'duffle coat', '핸드메이드 하프코트': 'wool coat',
+    '무스탕': 'shearling jacket', '고어텍스 방수 자켓': 'rain jacket', '플리스 자켓': 'fleece jacket', '워크 자켓': 'work jacket', '바시티 재킷': 'varsity jacket',
+    '트렌치코트': 'trench coat', '가죽 자켓': 'leather jacket', '스웨이드 자켓': 'suede jacket', '블레이저': 'blazer', '트위드 자켓': 'tweed jacket',
+    '데님 자켓': 'denim jacket', '바람막이': 'windbreaker', '오버셔츠 (셔켓)': 'overshirt', '가디건': 'cardigan', '크롭 가디건': 'cropped cardigan',
+    '반팔 티셔츠': 't-shirt', '오버핏 반팔 티셔츠': 'oversized t-shirt', '린넨 셔츠': 'linen shirt', '슬리브리스 탑': 'tank top', '피케 폴로 셔츠': 'polo shirt',
+    '기능성 티셔츠': 'sportswear', '드레스 셔츠': 'dress shirt', '블라우스': 'blouse', '긴팔 티셔츠': 'long sleeve tee', '스트라이프 긴팔 티': 'striped shirt',
+    '옥스포드 셔츠': 'oxford shirt', '오버핏 셔츠': 'oversized shirt', '셔츠 + 니트 베스트': 'sweater vest', '맨투맨': 'sweatshirt', '후드티': 'hoodie',
+    '크롭 니트': 'cropped sweater', '라운드 니트': 'knit sweater', '오버핏 니트': 'oversized sweater', '터틀넥 니트': 'turtleneck', '기모 맨투맨': 'sweatshirt',
+    '기모 후드': 'hoodie', '린넨 원피스': 'linen dress', '셔츠 원피스': 'shirt dress', '슬립 원피스 + 티셔츠': 'slip dress', '니트 원피스': 'knit dress'
+  };
+  const COLOR_EN = {
+    '아이보리': 'ivory', '라이트 카멜': 'camel', '웜 베이지': 'beige', '밀크 브라운': 'brown', '웜 네이비': 'navy', '코랄': 'coral', '피치': 'peach',
+    '라이트 옐로우': 'yellow', '애플 그린': 'green', '웜 아쿠아': 'aqua', '소프트 화이트': 'white', '쿨 그레이': 'grey', '그레이시 네이비': 'navy',
+    '로즈 베이지': 'beige', '슬레이트 그레이': 'grey', '라벤더': 'lavender', '스카이 블루': 'light blue', '로즈 핑크': 'pink', '민트': 'mint',
+    '파우더 블루': 'light blue', '카멜': 'camel', '딥 브라운': 'brown', '베이지': 'beige', '카키': 'khaki', '오트밀': 'cream', '머스타드': 'mustard',
+    '버건디': 'burgundy', '테라코타': 'terracotta', '올리브': 'olive', '브릭 오렌지': 'orange', '블랙': 'black', '차콜': 'charcoal', '네이비': 'navy',
+    '퓨어 화이트': 'white', '아이시 그레이': 'grey', '와인': 'burgundy', '로열 블루': 'blue', '푸시아': 'pink', '에메랄드': 'emerald', '아이시 핑크': 'pink',
+    '라이트 워싱': 'denim', '미드 워싱': 'denim', '다크 워싱': 'denim'
+  };
+  function photoQueries(o, gender) {
+    const lead = o.outer || o.dress || o.top;
+    const en = ITEM_EN[lead.n] || 'outfit';
+    const col = COLOR_EN[lead.color] || '';
+    const who = gender === 'female' ? 'woman' : gender === 'male' ? 'man' : '';
+    const q1 = [col, en, who, 'outfit'].filter(Boolean).join(' ');
+    const q2 = [en, who, 'fashion'].filter(Boolean).join(' ');
+    return [q1, q2];
+  }
+
   // ---------- 추천 3벌 (점수 순) ----------
   function recommend(w, profile, opts, nonce) {
     const used = new Set();
@@ -760,7 +801,7 @@ const WSL = (() => {
     return { outfits: top, notices };
   }
 
-  return { CITIES, forecastUrl, airUrl, parseForecast, manualDay, finalizeDay, wmo, BANDS, bandOf, PALETTES, ITEMS, TPO, recommend, bodyInfo, hashStr, lum };
+  return { CITIES, forecastUrl, airUrl, parseForecast, manualDay, finalizeDay, wmo, BANDS, bandOf, PALETTES, ITEMS, TPO, recommend, bodyInfo, hashStr, lum, photoQueries, ITEM_EN, COLOR_EN };
 })();
 
 
@@ -1008,6 +1049,71 @@ function figure(o, p) {
   return `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(o.title)} 색 조합 미리보기"><ellipse cx="100" cy="282" rx="48" ry="6" fill="rgba(0,0,0,.1)"/><g transform="translate(100 282) scale(${sx} ${sy}) translate(-100 -282)">${g}</g></svg>`;
 }
 
+// ---------- 실제 사진 (Unsplash) ----------
+const UNSPLASH_KEY = '__UNSPLASH_KEY__';
+const photoEnabled = () => !!UNSPLASH_KEY && !UNSPLASH_KEY.startsWith('__');
+const UTM = 'utm_source=weather_style_lab&utm_medium=referral';
+let photoBlockedUntil = 0, photoWarned = false;
+async function searchPhotos(q) {
+  const cache = store.get('wsl-photos', {});
+  const hit = cache[q];
+  if (hit && Date.now() - hit.at < 7 * 864e5) return hit.list;
+  if (Date.now() < photoBlockedUntil) return null;
+  const url = 'https://api.unsplash.com/search/photos?per_page=12&orientation=portrait&content_filter=high&client_id=' + encodeURIComponent(UNSPLASH_KEY) + '&query=' + encodeURIComponent(q);
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetch(url, { signal: ctl.signal });
+    if (r.status === 403 || r.status === 429) {
+      photoBlockedUntil = Date.now() + 10 * 60 * 1000;
+      if (!photoWarned) { photoWarned = true; toast('사진 요청이 많아 잠시 색 조합 그림으로 보여드려요'); }
+      return null;
+    }
+    if (!r.ok) return null;
+    const j = await r.json();
+    const list = (j.results || []).map(x => ({
+      id: x.id, src: x.urls.raw + (x.urls.raw.includes('?') ? '&' : '?') + 'w=600&h=800&fit=crop&crop=entropy&auto=format&q=70',
+      user: x.user && x.user.name || 'Unsplash', userLink: (x.user && x.user.links && x.user.links.html) || 'https://unsplash.com', alt: x.alt_description || ''
+    }));
+    const keys = Object.keys(cache);
+    if (keys.length > 80) keys.sort((a, b) => cache[a].at - cache[b].at).slice(0, keys.length - 80).forEach(k => delete cache[k]);
+    cache[q] = { at: Date.now(), list }; store.set('wsl-photos', cache);
+    return list;
+  } catch (e) { return null; } finally { clearTimeout(tm); }
+}
+function applyPhoto(fig, ph) {
+  if (!fig || !fig.isConnected || !ph) return;
+  const img = fig.querySelector('img.photo');
+  img.onload = () => fig.classList.add('has-photo');
+  img.onerror = () => fig.classList.remove('has-photo');
+  img.alt = ph.alt || '코디 참고 사진';
+  img.src = ph.src;
+  fig.querySelector('.pcredit').innerHTML = `Photo by <a href="${esc(ph.userLink)}?${UTM}" target="_blank" rel="noopener">${esc(ph.user)}</a> / <a href="https://unsplash.com/?${UTM}" target="_blank" rel="noopener">Unsplash</a>`;
+  fig.querySelector('.cap').textContent = '비슷한 스타일 참고 사진';
+}
+async function attachPhotos(mode, list, profileOf) {
+  if (!photoEnabled()) return;
+  const used = new Set(list.map(o => o._photo && o._photo.id).filter(Boolean));
+  await Promise.all(list.map(async (o, i) => {
+    const fig = document.querySelector(`[data-fig="${mode}-${i}"]`);
+    if (o._photo) return applyPhoto(fig, o._photo);
+    for (const q of WSL.photoQueries(o, profileOf(i).gender)) {
+      const res = await searchPhotos(q);
+      if (!res || !res.length) continue;
+      let k = o.seed % res.length, tries = 0;
+      while (used.has(res[k].id) && tries < res.length) { k = (k + 1) % res.length; tries++; }
+      if (used.has(res[k].id)) continue;
+      used.add(res[k].id); o._photo = res[k];
+      return applyPhoto(fig, o._photo);
+    }
+  }));
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-ftog]'); if (!t) return;
+  const fig = t.closest('.oc-fig'); const on = fig.classList.toggle('show-illu');
+  t.textContent = on ? '📷 사진 보기' : '🎨 색 조합 보기';
+  fig.querySelector('.cap').textContent = on ? '색 조합 미리보기' : '비슷한 스타일 참고 사진';
+});
+
 // ---------- 코디 카드 ----------
 function itemRows(o) {
   const rows = [];
@@ -1024,10 +1130,13 @@ function cardHTML(o, p, idx, mode) {
   const bg = S.theme === 'dark' ? shade(pal.bg, -0.8) : pal.bg;
   const rainIcon = it => (o._rain && it.rain === 'ok') ? ' <span class="badge g2" style="padding:1px 6px">방수</span>' : '';
   return `<article class="card oc">
-    <div class="oc-fig" style="background:${bg}">
+    <div class="oc-fig" data-fig="${mode}-${idx}" style="background:${bg}">
       <span class="badge rank">${mode === 'lb' ? esc(o._meta || '') : `추천 ${idx + 1}`}</span>
-      <span class="cap">색 조합 미리보기</span>
       ${figure(o, p)}
+      <img class="photo" alt="">
+      <span class="cap">색 조합 미리보기</span>
+      <span class="pcredit"></span>
+      <button class="ftog" data-ftog>🎨 색 조합 보기</button>
     </div>
     <div class="oc-body">
       <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge g${o.gradeLevel}">날씨 ${o.grade}</span><span class="badge acc">${esc(o.styleLabel)}</span><span class="badge">체감 ${o.target}℃ 기준</span></div>
@@ -1056,6 +1165,7 @@ function renderOutfits() {
   nb.innerHTML = S.rec.notices.map(n => `<div class="notice">ℹ️ ${esc(n.text)}${n.kind === 'style' ? '<button class="btn ghost sm" data-act="style-all">스타일 \'전체\'로 보기</button>' : ''}</div>`).join('');
   box.innerHTML = S.rec.outfits.length ? S.rec.outfits.map((o, i) => cardHTML(o, S.profile, i, 'today')).join('')
     : `<div class="empty card" style="grid-column:1/-1"><div>🧐</div>지금 조건에 맞는 코디가 없어요.<br>외출 목적이나 스타일을 바꿔 보세요.</div>`;
+  attachPhotos('today', S.rec.outfits, () => S.profile);
 }
 function persistLb() { store.set('wsl-lookbook', S.lookbook); $('#lbCount').textContent = S.lookbook.length; }
 $('#notices').addEventListener('click', e => {
@@ -1088,6 +1198,7 @@ function renderLookbook() {
   $('#lbCount').textContent = S.lookbook.length;
   $('#lbGrid').innerHTML = S.lookbook.length ? S.lookbook.map((l, i) => cardHTML(l.o, l.p, i, 'lb')).join('')
     : `<div class="empty card" style="grid-column:1/-1"><div>👗</div>아직 저장한 코디가 없어요.<br>마음에 드는 코디의 '🤍 룩북 저장'을 눌러 보세요.</div>`;
+  attachPhotos('lb', S.lookbook.map(l => l.o), i => S.lookbook[i].p).then(() => persistLb());
 }
 
 // ---------- 주간 ----------
