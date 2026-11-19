@@ -164,6 +164,19 @@ details.why ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:3px}
 .stores a{font-size:12px;font-weight:700;text-decoration:none;padding:7px 11px;border-radius:10px;border:1px solid var(--line)}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:14px;font-size:13px;font-weight:700;transition:.25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.drop{border:2px dashed var(--line);border-radius:20px;padding:22px;text-align:center;display:block;width:100%;background:var(--card)}
+.drop b{display:block;font-size:15px;margin-bottom:2px}
+.drop span{font-size:12px;color:var(--sub)}
+.pv{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start}
+@media(max-width:520px){.pv{grid-template-columns:110px 1fr}}
+.pv img{width:100%;border-radius:16px;object-fit:cover;aspect-ratio:3/4;background:var(--soft)}
+.ai-item{padding:12px 0;border-top:1px solid var(--line)}
+.ai-item:first-child{border-top:0}
+.ai-item .nm{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.ai-item .meta{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 8px}
+.keybox{display:flex;gap:6px}
+.keybox input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:0 12px}
+.spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 .credit{margin-top:28px;font-size:11px;color:var(--sub);text-align:center;line-height:1.7}
 </style>
 </head>
@@ -186,6 +199,7 @@ details.why ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:3px}
 
   <nav class="tabs" role="tablist">
     <button class="tab on" data-tab="today">오늘의 코디</button>
+    <button class="tab" data-tab="photo">📸 사진으로 찾기</button>
     <button class="tab" data-tab="week">주간 플랜</button>
     <button class="tab" data-tab="lookbook">룩북 (<span id="lbCount">0</span>)</button>
     <button class="tab" data-tab="guide">기온별 옷차림</button>
@@ -203,6 +217,15 @@ details.why ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:3px}
     </div>
     <div id="notices"></div>
     <div class="cards" id="cards"></div>
+  </div>
+
+  <div class="view" id="v-photo">
+    <p style="font-size:13px;color:var(--sub);margin-bottom:12px">마음에 드는 코디 사진(연예인·SNS·화보 등)을 올리면 AI가 옷을 하나씩 찾아 쇼핑몰 검색으로 연결하고, 원하면 내 취향으로 저장해 추천에 반영해요.</p>
+    <section class="card" id="keyCard" style="padding:16px;margin-bottom:14px"></section>
+    <input type="file" id="photoFile" accept="image/*" hidden>
+    <button class="drop" id="photoPick"><b>📷 사진 선택하기</b><span>갤러리에서 코디 사진 1장을 골라 주세요</span></button>
+    <div id="photoResult" style="margin-top:14px"></div>
+    <section class="card" id="tasteCard" style="padding:16px;margin-top:14px"></section>
   </div>
 
   <div class="view" id="v-week">
@@ -621,6 +644,11 @@ const WSL = (() => {
     if (ctx.w.rain) s += it.rain === 'ok' ? 0.7 : it.rain === 'bad' ? -0.9 : 0;
     if (ctx.w.wind >= 5 && it.cat === 'outer' && it.rain === 'ok') s += 0.25;
     if (ctx.gender === 'female' && it.g === 'f') s += 0.1;
+    if (ctx.taste) {
+      const tw = ctx.taste;
+      if (tw.styleW) s += 0.35 * Math.max(0, ...it.st.split('').map(k => tw.styleW[k] || 0));
+      if (tw.items[it.n]) s += Math.min(0.55, 0.3 * tw.items[it.n]);
+    }
     if (ctx.used.has(it.id)) s -= 0.7;
     return s + rng() * 0.3;
   }
@@ -639,6 +667,16 @@ const WSL = (() => {
     const pickFrom = arr => { const free = arr.filter(c => !taken.includes(c[1])); const src = free.length ? free : arr; return src[Math.floor(rng() * src.length)]; };
     const byLum = [...pal.neutrals].sort((a, b) => lum(a[1]) - lum(b[1]));
     let col;
+    const liked = ctx.taste && ctx.taste.colors.length ? ctx.taste.colors : null;
+    if (liked && !it.tags.includes('denim') && ctx.tpo !== 'i' && rng() < 0.55) {
+      const target = liked[Math.floor(rng() * liked.length)];
+      const pool = (slot === 'top' || slot === 'dress') ? [...pal.accents, ...pal.neutrals] : pal.neutrals;
+      const free = pool.filter(c => !taken.includes(c[1]));
+      const src = free.length ? free : pool;
+      col = src.reduce((b, c) => colorDist(c[1], target) < colorDist(b[1], target) ? c : b, src[0]);
+      taken.push(col[1]);
+      return { ...it, color: col[0], hex: col[1], label: `${col[0]} ${it.n}`, tasteColor: true };
+    }
     if (it.tags.includes('denim')) col = ctx.w.rain || pal === PALETTES.winter_cool ? DENIM.dark : pal === PALETTES.summer_cool ? DENIM.light : DENIM.mid;
     else if (ctx.tpo === 'i') col = slot === 'top' ? byLum[byLum.length - 1] : slot === 'shoes' ? byLum[0] : pickFrom(byLum.slice(0, 2));
     else if (ctx.w.rain && (slot === 'bottom' || slot === 'shoes')) col = pickFrom(byLum.slice(0, 3));
@@ -648,12 +686,43 @@ const WSL = (() => {
     return { ...it, color: col[0], hex: col[1], label: `${col[0]} ${it.n}` };
   }
 
+  // ---------- 사진 취향 ----------
+  function colorDist(a, b) {
+    const p = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const x = p(a), y = p(b); return (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2 + (x[2] - y[2]) ** 2;
+  }
+  // 저장된 취향 → 점수 계산용
+  function tasteCtx(t) {
+    if (!t || !t.count) return null;
+    const total = Object.values(t.styles || {}).reduce((a, b) => a + b, 0);
+    const styleW = {}; let topStyle = null, best = 0;
+    Object.entries(t.styles || {}).forEach(([k, v]) => { styleW[k] = total ? v / total : 0; if (v > best) { best = v; topStyle = k; } });
+    return { styleW: total ? styleW : null, topStyle, items: t.items || {}, colors: (t.colors || []).map(c => c.hex).filter(h => /^#[0-9a-fA-F]{6}$/.test(h)) };
+  }
+  // 분석 결과를 취향에 더하기
+  function addTaste(t, a) {
+    t = t ? JSON.parse(JSON.stringify(t)) : { count: 0, styles: {}, items: {}, colors: [], looks: [] };
+    t.count = (t.count || 0) + 1;
+    const sk = STYLE_KEY[a.style]; if (sk) t.styles[sk] = (t.styles[sk] || 0) + 1;
+    (a.items || []).forEach(x => {
+      if (x.match && ITEMS.some(i => i.n === x.match)) t.items[x.match] = (t.items[x.match] || 0) + 1;
+      if (/^#[0-9a-fA-F]{6}$/.test(x.hex || '') && x.category !== 'acc') t.colors.unshift({ hex: x.hex, name: x.color || '' });
+    });
+    t.colors = t.colors.filter((c, i, arr) => arr.findIndex(d => colorDist(d.hex, c.hex) < 900) === i).slice(0, 8);
+    t.looks = [{ summary: a.summary || '', style: a.style, at: Date.now() }, ...(t.looks || [])].slice(0, 10);
+    return t;
+  }
+  function itemCatalog() {
+    const by = {}; ITEMS.forEach(i => (by[i.cat] = by[i.cat] || []).push(i.n));
+    return `아우터: ${by.outer.join(', ')}\n상의: ${by.top.join(', ')}\n하의: ${by.bottom.join(', ')}\n원피스: ${by.dress.join(', ')}\n신발: ${by.shoes.join(', ')}`;
+  }
+
   // ---------- 코디 1벌 ----------
   function buildOutfit(w, profile, opts, seed, used) {
     const rng = mulberry32(seed);
     const body = bodyInfo(profile);
     const tpo = TPO[opts.tpo] || TPO.daily;
-    const ctx = { T: w.target, w, gender: profile.gender, tpo: tpo.k, styleKey: STYLE_KEY[opts.style] || null, fit: profile.fit, body, used };
+    const ctx = { T: w.target, w, gender: profile.gender, tpo: tpo.k, styleKey: STYLE_KEY[opts.style] || null, fit: profile.fit, body, used, taste: tasteCtx(opts.taste) };
     const pal = PALETTES[profile.personalColor] || PALETTES.autumn_warm;
     const taken = [], scores = [];
     const o = { id: 'o' + seed.toString(36), seed };
@@ -743,6 +812,12 @@ const WSL = (() => {
       if (o.bottom && !o.bottom.tags.includes('denim') && lum(o.bottom.hex) < 0.55) why.push('비 오는 날이라 하의는 젖어도 티가 덜 나는 어두운 색으로 골랐어요');
       if (!rainCovered) why.push('⚠️ 방수 아이템이 없어요. 우산을 꼭 챙기세요');
     }
+    if (ctx.taste) {
+      const hit = parts.filter(x => ctx.taste.items[x.n]).map(x => ko(x.n));
+      if (hit.length) why.push(`사진으로 저장한 취향을 반영해 ${eul(hit.slice(0, 2).join('·'))} 우선했어요`);
+      else if (ctx.taste.topStyle && parts.some(x => x.st.includes(ctx.taste.topStyle))) why.push(`사진으로 저장한 취향(${STYLE_LABEL[ctx.taste.topStyle]})을 반영했어요`);
+      if (parts.some(x => x.tasteColor)) why.push('저장한 사진 속 색감과 가까운 색을 골랐어요');
+    }
     if (o.outerNote === '아침·저녁용') why.push(`일교차가 ${w.range}℃라 겉옷은 아침·저녁에 걸치세요`);
     if (w.air && w.air.bad) why.push(`미세먼지 ${w.air.grade} — 마스크를 챙기세요`);
     if (body.short || body.tall || body.build !== 'normal') why.push('체형 참고: ' + body.tip + ' (사이즈 판단은 아니에요)');
@@ -786,7 +861,7 @@ const WSL = (() => {
   // ---------- 추천 3벌 (점수 순) ----------
   function recommend(w, profile, opts, nonce) {
     const used = new Set();
-    const base = hashStr(`${w.place}${w.date}${profile.gender}${profile.personalColor}${profile.fit}${opts.tpo}${opts.style}${nonce}`);
+    const base = hashStr(`${w.place}${w.date}${profile.gender}${profile.personalColor}${profile.fit}${opts.tpo}${opts.style}${nonce}${opts.taste ? opts.taste.count : 0}`);
     const cands = [], sigs = new Set();
     for (let i = 0; i < 12 && cands.length < 6; i++) {
       const o = buildOutfit(w, profile, opts, (base + i * 7919) >>> 0, used);
@@ -801,7 +876,7 @@ const WSL = (() => {
     return { outfits: top, notices };
   }
 
-  return { CITIES, forecastUrl, airUrl, parseForecast, manualDay, finalizeDay, wmo, BANDS, bandOf, PALETTES, ITEMS, TPO, recommend, bodyInfo, hashStr, lum, photoQueries, ITEM_EN, COLOR_EN };
+  return { CITIES, forecastUrl, airUrl, parseForecast, manualDay, finalizeDay, wmo, BANDS, bandOf, PALETTES, ITEMS, TPO, recommend, bodyInfo, hashStr, lum, photoQueries, ITEM_EN, COLOR_EN, addTaste, tasteCtx, itemCatalog, STYLE_LABEL, STYLE_KEY };
 })();
 
 
@@ -1169,7 +1244,7 @@ function renderOutfits() {
 }
 function persistLb() { store.set('wsl-lookbook', S.lookbook); $('#lbCount').textContent = S.lookbook.length; }
 $('#notices').addEventListener('click', e => {
-  if (e.target.closest('[data-act=style-all]')) { S.opts.style = 'all'; store.set('wsl-opts', S.opts); segOpts('#styleSeg', 'style'); renderOutfits(); }
+  if (e.target.closest('[data-act=style-all]')) { S.opts.style = 'all'; store.set('wsl-opts', { tpo: S.opts.tpo, style: S.opts.style }); segOpts('#styleSeg', 'style'); renderOutfits(); }
 });
 $('#cards').addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
@@ -1319,11 +1394,150 @@ $('#locBtn').onclick = () => {
   { timeout: 10000, maximumAge: 10 * 60 * 1000, enableHighAccuracy: false });
 };
 
+// ---------- 사진으로 찾기 (Gemini) ----------
+const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+let photoState = { dataUrl: null, b64: null, result: null, busy: false, err: null, saved: false };
+S.taste = store.get('wsl-taste', null);
+S.opts.taste = S.taste;
+const geminiKey = () => store.get('wsl-gemini-key', '');
+function renderKeyCard() {
+  const k = geminiKey();
+  $('#keyCard').innerHTML = k ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px"><span>🔑 AI 분석 키 설정됨 <span style="color:var(--sub)">(${esc(k.slice(0, 4))}••••${esc(k.slice(-3))})</span></span><button class="link" id="keyDel">키 삭제</button></div>`
+    : `<p style="font-size:14px;font-weight:700;margin-bottom:4px">🔑 처음 한 번만: Gemini 무료 키 넣기</p>
+       <p style="font-size:12px;color:var(--sub);margin-bottom:10px">사진 분석은 Google Gemini AI를 써요. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="link">aistudio.google.com/apikey</a> 에서 구글 계정으로 <b>Create API key</b>를 눌러 만든 키를 붙여넣어 주세요. 키는 이 휴대폰에만 저장돼요.</p>
+       <div class="keybox"><input id="keyIn" type="password" placeholder="AIza로 시작하는 키" autocomplete="off"><button class="btn pri sm" id="keySave">저장</button></div>`;
+  if ($('#keySave')) $('#keySave').onclick = () => {
+    const v = $('#keyIn').value.trim();
+    if (v.length < 20) return toast('키를 다시 확인해 주세요');
+    store.set('wsl-gemini-key', v); renderKeyCard(); renderPhoto(); toast('키를 저장했어요');
+  };
+  if ($('#keyDel')) $('#keyDel').onclick = () => { store.set('wsl-gemini-key', ''); renderKeyCard(); renderPhoto(); toast('키를 삭제했어요'); };
+}
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      const max = 1024, sc = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('image')); };
+    img.src = url;
+  });
+}
+function photoPrompt() {
+  return `너는 한국의 패션 스타일리스트야. 사진 속 사람이 입은 옷, 신발, 가방·모자 같은 소품만 분석해.
+사진 속 인물이 누구인지(이름, 신원, 직업)는 절대 추측하거나 언급하지 마. 옷 정보만 다뤄.
+아래 JSON 형식으로만 답해. 설명 문장이나 코드 블록 표시는 넣지 마.
+{"is_fashion": true 또는 false, "summary": "코디를 한 문장으로 요약 (한국어)", "style": "casual 또는 minimal 또는 street 또는 office 중 하나", "mood": ["분위기 키워드 2~3개"], "temp_min": 어울리는 최저 기온 숫자, "temp_max": 어울리는 최고 기온 숫자,
+"items": [{"category": "outer 또는 top 또는 bottom 또는 dress 또는 shoes 또는 acc", "name": "한국어 아이템 이름 (예: 오버핏 울 트렌치코트)", "color": "한국어 색 이름", "hex": "#RRGGBB 형식의 대표 색", "fit": "over 또는 regular 또는 slim", "material": "소재, 모르면 빈 문자열", "query": "쇼핑몰 검색어 (색 + 소재 + 핏 + 아이템, 한국어, 브랜드명 제외)", "match": "아래 목록에서 가장 비슷한 이름을 그대로, 비슷한 게 없으면 빈 문자열"}]}
+옷이 잘 보이지 않는 사진이면 is_fashion을 false로 하고 items는 빈 배열로 해.
+목록:
+${WSL.itemCatalog()}`;
+}
+async function analyzePhoto() {
+  const key = geminiKey();
+  if (!key) { toast('먼저 Gemini 키를 넣어 주세요'); return; }
+  if (!photoState.b64 || photoState.busy) return;
+  photoState.busy = true; photoState.err = null; photoState.result = null; photoState.saved = false; renderPhoto();
+  const body = JSON.stringify({ contents: [{ parts: [{ text: photoPrompt() }, { inline_data: { mime_type: 'image/jpeg', data: photoState.b64 } }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } });
+  let err = 'fail';
+  for (const m of GEMINI_MODELS) {
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 40000);
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: 'POST', signal: ctl.signal, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body });
+      if (r.status === 404) { err = 'model'; continue; }
+      if (r.status === 400 || r.status === 401 || r.status === 403) { const t = await r.text(); err = /API key|API_KEY|permission/i.test(t) ? 'key' : 'bad'; break; }
+      if (r.status === 429) { err = 'quota'; break; }
+      if (!r.ok) { err = 'fail'; continue; }
+      const j = await r.json();
+      if (j.promptFeedback && j.promptFeedback.blockReason) { err = 'blocked'; break; }
+      const txt = (((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(p => p.text || '').join('') : '';
+      const a = JSON.parse(txt.replace(/^```(json)?/i, '').replace(/```\s*$/, '').trim());
+      a.items = Array.isArray(a.items) ? a.items.filter(x => x && x.name).slice(0, 8) : [];
+      photoState.result = a; err = null; break;
+    } catch (e) { err = e.name === 'AbortError' ? 'timeout' : (e instanceof SyntaxError ? 'parse' : 'net'); }
+    finally { clearTimeout(tm); }
+  }
+  photoState.busy = false; photoState.err = err; renderPhoto();
+}
+const ERR_TEXT = {
+  key: '키가 올바르지 않아요. 키를 삭제하고 다시 넣어 주세요.', quota: '오늘 무료 분석 횟수를 다 썼거나 요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.',
+  net: '인터넷 연결을 확인하고 다시 시도해 주세요.', timeout: '분석이 너무 오래 걸려요. 다시 시도해 주세요.', blocked: '이 사진은 분석할 수 없어요. 다른 사진으로 시도해 주세요.',
+  parse: 'AI 응답을 읽지 못했어요. 다시 시도해 주세요.', model: '사용할 수 있는 Gemini 모델을 찾지 못했어요.', bad: '요청이 거절됐어요. 다른 사진으로 시도해 주세요.', fail: '분석에 실패했어요. 다시 시도해 주세요.'
+};
+const CAT_KO = { outer: '아우터', top: '상의', bottom: '하의', dress: '원피스', shoes: '신발', acc: '소품' };
+const FIT_LABEL = { over: '오버핏', regular: '레귤러핏', slim: '슬림핏' };
+function storeLinks(query) {
+  const q = encodeURIComponent(query);
+  return `<div class="stores">
+    <a href="https://www.musinsa.com/search/musinsa/integration?q=${q}" target="_blank" rel="noopener">무신사</a>
+    <a href="https://search.29cm.co.kr/?keyword=${q}" target="_blank" rel="noopener">29CM</a>
+    <a href="https://www.wconcept.co.kr/Search?keyword=${q}" target="_blank" rel="noopener">W컨셉</a>
+    <a href="https://search.shopping.naver.com/search/all?query=${q}" target="_blank" rel="noopener">네이버쇼핑</a></div>`;
+}
+function renderPhoto() {
+  const box = $('#photoResult'), st = photoState;
+  if (!st.dataUrl) { box.innerHTML = ''; return; }
+  const hasLens = !!(window.AndroidBridge && window.AndroidBridge.shareImage);
+  let body = '';
+  if (st.busy) body = `<p style="font-size:14px;font-weight:700"><span class="spin">⏳</span> AI가 옷을 찾는 중이에요…</p><p class="small" style="font-size:12px;color:var(--sub)">10~20초 걸릴 수 있어요. 그동안 다른 탭을 봐도 돼요.</p>`;
+  else if (st.err) body = `<p style="font-size:14px;font-weight:700;margin-bottom:6px">😢 ${esc(ERR_TEXT[st.err] || ERR_TEXT.fail)}</p><button class="btn pri sm" id="aiGo">↻ 다시 분석</button>`;
+  else if (st.result && st.result.is_fashion === false) body = `<p style="font-size:14px;font-weight:700;margin-bottom:6px">옷이 잘 보이는 사진이 아니에요.</p><p style="font-size:12px;color:var(--sub)">전신이나 상반신 코디가 잘 보이는 사진으로 다시 시도해 주세요.</p>`;
+  else if (st.result) {
+    const a = st.result, sk = WSL.STYLE_KEY[a.style];
+    body = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">${sk ? `<span class="badge acc">${WSL.STYLE_LABEL[sk]}</span>` : ''}${(Array.isArray(a.mood) ? a.mood : []).slice(0, 3).map(m => `<span class="badge">${esc(m)}</span>`).join('')}${isFinite(a.temp_min) && isFinite(a.temp_max) ? `<span class="badge">${Math.round(a.temp_min)}~${Math.round(a.temp_max)}℃에 어울림</span>` : ''}</div>
+      <p style="font-size:14px;font-weight:700;margin-bottom:6px">${esc(a.summary || '')}</p>
+      <button class="btn ${st.saved ? 'acc' : 'pri'} sm" id="tasteAdd" ${st.saved ? 'disabled' : ''}>${st.saved ? '💖 내 취향에 저장됨' : '💖 이 스타일 내 취향에 추가'}</button>`;
+  } else body = `<p style="font-size:14px;font-weight:700;margin-bottom:8px">이 사진 속 옷을 찾아볼까요?</p><button class="btn pri sm" id="aiGo" ${geminiKey() ? '' : 'disabled'}>🔎 AI로 옷 분석하기</button>${geminiKey() ? '' : '<p style="font-size:12px;color:var(--sub);margin-top:6px">위에서 Gemini 키를 먼저 넣어 주세요.</p>'}`;
+  const items = st.result && st.result.items && st.result.items.length ? `<section class="card" style="padding:4px 16px;margin-top:12px">${st.result.items.map(x => `
+    <div class="ai-item"><div class="nm"><span class="dot" style="background:${/^#[0-9a-fA-F]{6}$/.test(x.hex || '') ? x.hex : '#999'}"></span>${esc(x.name)}</div>
+      <div class="meta"><span class="badge">${CAT_KO[x.category] || '아이템'}</span>${x.color ? `<span class="badge">${esc(x.color)}</span>` : ''}${FIT_LABEL[x.fit] ? `<span class="badge">${FIT_LABEL[x.fit]}</span>` : ''}${x.material ? `<span class="badge">${esc(x.material)}</span>` : ''}${x.match ? `<span class="badge acc">앱 추천에 반영: ${esc(x.match)}</span>` : ''}</div>
+      ${storeLinks(x.query || x.name)}</div>`).join('')}</section>` : '';
+  box.innerHTML = `<section class="card" style="padding:16px"><div class="pv"><img src="${st.dataUrl}" alt="올린 코디 사진"><div>${body}
+    <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${hasLens ? '<button class="btn ghost sm" id="lensGo">🔍 Google 렌즈로 비슷한 상품</button>' : '<a class="btn ghost sm" href="https://lens.google.com/" target="_blank" rel="noopener" style="text-decoration:none">🔍 Google 렌즈 열기</a>'}</div>
+    <p style="font-size:11px;color:var(--sub);margin-top:8px">AI 분석은 참고용이에요. 사진은 분석을 위해 Google로 전송되고, 무료 키는 Google이 서비스 개선에 쓸 수 있어요.</p></div></div></section>${items}`;
+  if ($('#aiGo')) $('#aiGo').onclick = analyzePhoto;
+  if ($('#lensGo')) $('#lensGo').onclick = () => { try { window.AndroidBridge.shareImage(st.b64); } catch (e) { toast('Google 렌즈를 열지 못했어요'); } };
+  if ($('#tasteAdd')) $('#tasteAdd').onclick = () => {
+    S.taste = WSL.addTaste(S.taste, st.result); store.set('wsl-taste', S.taste); S.opts.taste = S.taste;
+    st.saved = true; renderPhoto(); renderTaste(); renderOutfits(); renderWeek(); toast('💖 취향에 저장했어요. 오늘의 코디에 반영돼요');
+  };
+}
+function renderTaste() {
+  const t = S.taste, card = $('#tasteCard');
+  if (!t || !t.count) { card.innerHTML = `<p style="font-size:14px;font-weight:700">💖 내 취향</p><p style="font-size:12px;color:var(--sub);margin-top:4px">아직 저장한 취향이 없어요. 사진을 분석한 뒤 '내 취향에 추가'를 눌러 보세요.</p>`; return; }
+  const styles = Object.entries(t.styles || {}).sort((a, b) => b[1] - a[1]);
+  const items = Object.entries(t.items || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  card.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><p style="font-size:14px;font-weight:700">💖 내 취향 <span style="color:var(--sub);font-weight:500">(사진 ${t.count}장)</span></p><button class="link" id="tasteReset">초기화</button></div>
+    <p style="font-size:12px;color:var(--sub);margin:4px 0 10px">아래 취향이 오늘의 코디 점수와 색 고르기에 반영돼요.</p>
+    ${styles.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${styles.map(([k, v]) => `<span class="badge acc">${WSL.STYLE_LABEL[k]} ×${v}</span>`).join('')}</div>` : ''}
+    ${items.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${items.map(([n, v]) => `<span class="badge">${esc(n)}${v > 1 ? ' ×' + v : ''}</span>`).join('')}</div>` : ''}
+    ${(t.colors || []).length ? `<div class="swatches">${t.colors.map(c => `<span class="sw" title="${esc(c.name)}" style="background:${c.hex}"></span>`).join('')}</div>` : ''}`;
+  let arm = 0;
+  $('#tasteReset').onclick = () => {
+    if (Date.now() - arm > 2500) { arm = Date.now(); toast('한 번 더 누르면 취향이 초기화돼요'); return; }
+    S.taste = null; S.opts.taste = null; store.set('wsl-taste', null); renderTaste(); renderOutfits(); renderWeek(); toast('취향을 초기화했어요');
+  };
+}
+$('#photoPick').onclick = () => $('#photoFile').click();
+$('#photoFile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const d = await loadImage(f);
+    photoState = { dataUrl: d, b64: d.split(',')[1], result: null, busy: false, err: null, saved: false };
+    renderPhoto();
+    if (geminiKey()) analyzePhoto();
+  } catch (x) { toast('사진을 열지 못했어요'); }
+};
+
 // ---------- 공통 바인딩 ----------
 function segOpts(sel, key) {
   $$(sel + ' button').forEach(b => {
     b.classList.toggle('on', b.dataset.v === S.opts[key]);
-    b.onclick = () => { S.opts[key] = b.dataset.v; store.set('wsl-opts', S.opts); S.nonce = 0; segOpts(sel, key); renderProfile(); renderOutfits(); renderWeek(); };
+    b.onclick = () => { S.opts[key] = b.dataset.v; store.set('wsl-opts', { tpo: S.opts.tpo, style: S.opts.style }); S.nonce = 0; segOpts(sel, key); renderProfile(); renderOutfits(); renderWeek(); };
   });
 }
 function renderAll() { computeWeather(); renderWeather(); renderProfile(); renderOutfits(); renderWeek(); renderGuide(); renderLookbook(); }
@@ -1356,7 +1570,7 @@ window.wslBack = () => {
 };
 window.addEventListener('online', () => { if (S.wx.status === 'error' || S.wx.status === 'stale') loadWeather(true); });
 
-applyTheme(); fillCities(); segOpts('#tpoSeg', 'tpo'); segOpts('#styleSeg', 'style');
+applyTheme(); fillCities(); segOpts('#tpoSeg', 'tpo'); segOpts('#styleSeg', 'style'); renderKeyCard(); renderTaste();
 loadWeather(false);
 if (!savedProfile) setTimeout(openProfile, 300);
 })();

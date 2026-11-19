@@ -11,7 +11,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
+import android.util.Base64;
 import android.webkit.GeolocationPermissions;
+import android.webkit.ValueCallback;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -21,12 +23,18 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
+
+import java.io.File;
+import java.io.FileOutputStream;
 
 public class MainActivity extends Activity {
     private static final String START_URL = "https://appassets.androidplatform.net/assets/index.html";
     private static final String ASSET_HOST = "appassets.androidplatform.net";
     private static final int REQ_LOCATION = 7;
+    private static final int REQ_FILE = 8;
+    private ValueCallback<Uri[]> fileCallback;
 
     private WebView web;
     private GeolocationPermissions.Callback pendingGeoCallback;
@@ -76,6 +84,24 @@ public class MainActivity extends Activity {
         });
 
         web.setWebChromeClient(new WebChromeClient() {
+            // 앱 화면의 '사진 선택하기' → 휴대폰 갤러리 열기
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                fileCallback = callback;
+                Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
+                pick.addCategory(Intent.CATEGORY_OPENABLE);
+                pick.setType("image/*");
+                try {
+                    startActivityForResult(Intent.createChooser(pick, "코디 사진 선택"), REQ_FILE);
+                } catch (ActivityNotFoundException e) {
+                    fileCallback = null;
+                    Toast.makeText(MainActivity.this, "사진을 고를 앱이 없어요", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                return true;
+            }
+
             @Override
             public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
                 if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -107,6 +133,19 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_FILE && fileCallback != null) {
+            Uri[] result = null;
+            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+                result = new Uri[]{data.getData()};
+            }
+            fileCallback.onReceiveValue(result);
+            fileCallback = null;
+        }
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         web.saveState(outState);
@@ -134,6 +173,35 @@ public class MainActivity extends Activity {
     }
 
     private class Bridge {
+        // 분석한 사진을 Google 렌즈(구글 앱)로 보내 비슷한 상품 찾기
+        @JavascriptInterface
+        public void shareImage(final String base64) {
+            runOnUiThread(() -> {
+                try {
+                    File dir = new File(getCacheDir(), "shared");
+                    if (!dir.exists()) dir.mkdirs();
+                    File file = new File(dir, "look.jpg");
+                    try (FileOutputStream out = new FileOutputStream(file)) {
+                        out.write(Base64.decode(base64, Base64.DEFAULT));
+                    }
+                    Uri uri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    Intent send = new Intent(Intent.ACTION_SEND);
+                    send.setType("image/jpeg");
+                    send.putExtra(Intent.EXTRA_STREAM, uri);
+                    send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    Intent lens = new Intent(send).setPackage("com.google.android.googlequicksearchbox");
+                    try {
+                        startActivity(lens);
+                    } catch (ActivityNotFoundException e) {
+                        startActivity(Intent.createChooser(send, "비슷한 상품 찾기"));
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "사진을 보내지 못했어요", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+
         @JavascriptInterface
         public void setDark(final boolean dark) {
             runOnUiThread(() -> {
